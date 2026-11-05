@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Fontlord",
   "version": "0.1.0",
-  "identifier": "dev.fontlord.app",
+  "identifier": "dev.fontlord.editor",
   "build": {
     "beforeDevCommand": "pnpm --dir ui dev",
     "devUrl": "http://localhost:1420",
@@ -37,7 +37,7 @@
       "icons/icon.ico",
       "icons/icon.png"
     ],
-    "category": "Graphics",
+    "category": "Graphics and Design",
     "shortDescription": "Редактор шрифтов: рисуйте символы кистями и экспортируйте TrueType",
     "longDescription": "Fontlord — редактор шрифтов: символы рисуются обычной мышью, специальные кисти превращают рисунок в векторные контуры TrueType. Поддерживаются сетка Unicode, поиск по символам, промежуточные сохранения проекта и экспорт готового шрифта.",
     "publisher": "Fontlord",
