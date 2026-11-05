@@ -1,6 +1,7 @@
 # Сборка Rust
 /target
 **/*.rs.bk
+Cargo.lock
 
 # Локальное окружение сборки
 /.local-sys/
@@ -17,6 +18,8 @@
 # Проекты и артефакты
 *.fontlord
 *.ttf
+*.otf
+*.woff
 !crates/fontlord-ttf/tests/**/*.ttf
 *.tmp-save
 
