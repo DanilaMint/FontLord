@@ -149,3 +149,13 @@ export function fontExportDialog(): Promise<ExportReport | null> {
 export function fontPreviewBytes(): Promise<number[]> {
   return invoke<number[]>('font_preview_ttf');
 }
+
+/** Устанавливает заголовок окна приложения. */
+export function setWindowTitle(title: string): Promise<void> {
+  return invoke<void>('set_window_title', { title });
+}
+
+/** Завершает работу приложения. */
+export function appExit(): Promise<void> {
+  return invoke<void>('app_exit');
+}

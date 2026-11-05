@@ -44,6 +44,8 @@ pub fn run() {
             commands::project_open_dialog,
             commands::project_save_dialog,
             commands::font_export_dialog,
+            commands::set_window_title,
+            commands::app_exit,
         ])
         .run(tauri::generate_context!())
         .expect("не удалось запустить приложение Fontlord");

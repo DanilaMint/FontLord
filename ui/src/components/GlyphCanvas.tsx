@@ -19,7 +19,6 @@ interface Props {
 export function GlyphCanvas({ active }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [zoom, setZoom] = useState(1);
   const [drawing, setDrawing] = useState(false);
   const [livePoints, setLivePoints] = useState<StrokePoint[]>([]);
   const [closedMode, setClosedMode] = useState(false);
@@ -29,6 +28,10 @@ export function GlyphCanvas({ active }: Props) {
   const brushKind = useStore((state) => state.brushKind);
   const brushSettings = useStore((state) => state.brushSettings);
   const nextStrokeId = useStore((state) => state.nextStrokeId);
+  const zoom = useStore((state) => state.zoom);
+  const zoomIn = useStore((state) => state.zoomIn);
+  const zoomOut = useStore((state) => state.zoomOut);
+  const zoomReset = useStore((state) => state.zoomReset);
   const applyStroke = useStore((state) => state.applyStroke);
   const eraseAt = useStore((state) => state.eraseAt);
 
@@ -219,10 +222,8 @@ export function GlyphCanvas({ active }: Props) {
   const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
     if (!event.ctrlKey && !event.metaKey) return;
     event.preventDefault();
-    setZoom((value) => {
-      const next = value * (event.deltaY < 0 ? 1.1 : 1 / 1.1);
-      return Math.min(8, Math.max(0.2, next));
-    });
+    if (event.deltaY < 0) zoomIn();
+    else zoomOut();
   };
 
   return (
@@ -237,12 +238,15 @@ export function GlyphCanvas({ active }: Props) {
         onWheel={handleWheel}
       />
       <div className="canvas-tools">
-        <button type="button" onClick={() => setZoom((z) => Math.max(0.2, z / 1.2))}>
+        <button type="button" onClick={zoomOut} title="Уменьшить (Ctrl+−)">
           −
         </button>
         <span>{Math.round(zoom * 100)}%</span>
-        <button type="button" onClick={() => setZoom((z) => Math.min(8, z * 1.2))}>
+        <button type="button" onClick={zoomIn} title="Увеличить (Ctrl++)">
           +
+        </button>
+        <button type="button" onClick={zoomReset} title="Сбросить масштаб (Ctrl+0)">
+          100%
         </button>
         <button
           type="button"

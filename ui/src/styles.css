@@ -181,6 +181,15 @@ textarea:focus {
   min-height: 0;
 }
 
+/* Скрытая панель символов (Ctrl+B). */
+.app.no-left-panel .layout {
+  grid-template-columns: 0 minmax(0, 1fr) 320px;
+}
+
+.app.no-left-panel .sidebar.left {
+  display: none;
+}
+
 .sidebar {
   min-height: 0;
   overflow-y: auto;
@@ -299,7 +308,9 @@ textarea:focus {
 }
 
 .block-list {
-  max-height: 190px;
+  /* Высота списка блоков — половина высоты сетки символов (соотношение 1:2). */
+  flex: 1 1 0;
+  min-height: 140px;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -340,7 +351,8 @@ textarea:focus {
   grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
   gap: 4px;
   overflow-y: auto;
-  flex: 1;
+  /* Сетка символов вдвое выше списка блоков. */
+  flex: 2 1 0;
   min-height: 0;
   align-content: start;
   padding-right: 2px;
@@ -713,4 +725,153 @@ input[type='range']::-moz-range-thumb {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 18px;
+}
+
+/* ---------- Меню верхнего уровня ---------- */
+
+.menubar {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 2px 8px 0;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 30;
+}
+
+.menubar-item {
+  position: relative;
+}
+
+.menubar-button {
+  border: none;
+  background: transparent;
+  border-radius: 4px 4px 0 0;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.menubar-button:hover,
+.menubar-button.open {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.menubar-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 250px;
+  padding: 4px;
+  background: var(--bg-panel-alt);
+  border: 1px solid var(--border-strong);
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  z-index: 40;
+}
+
+.menubar-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  padding: 5px 8px;
+  text-align: left;
+  font-size: 12px;
+}
+
+.menubar-entry:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.menubar-entry:disabled {
+  color: var(--text-faint);
+  opacity: 0.6;
+}
+
+.menubar-check {
+  width: 12px;
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.menubar-label {
+  flex: 1;
+}
+
+.menubar-entry kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.menubar-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+/* ---------- О программе ---------- */
+
+.about {
+  width: 420px;
+}
+
+.about-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.about-head h2 {
+  margin: 0;
+  font-size: 15px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+}
+
+.brand-mark.large {
+  width: 44px;
+  height: 44px;
+  font-size: 15px;
+  border-radius: 10px;
+}
+
+.about-table {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.about-table td {
+  padding: 3px 0;
+  color: var(--text-dim);
+  vertical-align: top;
+}
+
+.about-table td:first-child {
+  width: 45%;
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+.about code {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
 }

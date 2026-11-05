@@ -126,7 +126,9 @@ def main(argv: list[str]) -> int:
     display = Display()
     command = argv[1]
 
-    if command == "click":
+    if command == "move":
+        display.move(int(argv[2]), int(argv[3]))
+    elif command == "click":
         display.click(int(argv[2]), int(argv[3]))
     elif command == "focus":
         display.focus(int(argv[2], 0))
@@ -135,6 +137,18 @@ def main(argv: list[str]) -> int:
     elif command == "key":
         display.key(argv[2], True)
         display.key(argv[2], False)
+    elif command == "combo":
+        # Сочетание клавиш: ctrl+<клавиша> или shift+<клавиша>
+        aliases = {"ctrl": "Control_L", "shift": "Shift_L", "alt": "Alt_L"}
+        modifier = aliases.get(argv[2], argv[2])
+        key = argv[3]
+        display.key(modifier, True)
+        time.sleep(0.05)
+        display.key(key, True)
+        time.sleep(0.05)
+        display.key(key, False)
+        time.sleep(0.05)
+        display.key(modifier, False)
     elif command == "drag":
         coordinates = [int(value) for value in argv[2:]]
         points = list(zip(coordinates[::2], coordinates[1::2]))

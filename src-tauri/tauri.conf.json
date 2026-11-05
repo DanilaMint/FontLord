@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Fontlord — редактор шрифтов",
+        "title": "Fontlord",
         "width": 1480,
         "height": 940,
         "minWidth": 1024,
@@ -27,15 +27,21 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "appimage", "rpm"],
+    "targets": "all",
     "icon": [
       "icons/32x32.png",
+      "icons/64x64.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico",
       "icons/icon.png"
     ],
     "category": "Graphics",
-    "shortDescription": "Растровый редактор шрифтов с векторными кистями",
-    "longDescription": "Fontlord — редактор шрифтов: рисуйте символы кистями, приложение превращает закорюшки в векторные контуры TrueType и экспортирует готовый шрифт."
+    "shortDescription": "Редактор шрифтов: рисуйте символы кистями и экспортируйте TrueType",
+    "longDescription": "Fontlord — редактор шрифтов: символы рисуются обычной мышью, специальные кисти превращают рисунок в векторные контуры TrueType. Поддерживаются сетка Unicode, поиск по символам, промежуточные сохранения проекта и экспорт готового шрифта.",
+    "publisher": "Fontlord",
+    "homepage": "https://github.com/fontlord/fontlord",
+    "copyright": "© Fontlord"
   }
 }

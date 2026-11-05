@@ -60,6 +60,11 @@ interface AppState {
   status: string;
   error: string | null;
   newProjectOpen: boolean;
+  aboutOpen: boolean;
+  leftPanelVisible: boolean;
+
+  /* Масштаб холста */
+  zoom: number;
 
   /* Действия */
   init: () => Promise<void>;
@@ -82,7 +87,13 @@ interface AppState {
   newProject: (familyName: string, styleName: string) => Promise<void>;
   openNewProject: () => void;
   closeNewProject: () => void;
-  saveProject: (path?: string) => Promise<void>;
+  openAbout: () => void;
+  closeAbout: () => void;
+  toggleLeftPanel: () => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
+  zoomReset: () => void;
+  saveProject: (path?: string, forceDialog?: boolean) => Promise<void>;
   openProject: () => Promise<void>;
   exportFont: () => Promise<void>;
   setStatus: (status: string) => void;
@@ -111,6 +122,10 @@ export const useStore = create<AppState>((set, get) => ({
   status: 'Готово',
   error: null,
   newProjectOpen: false,
+  aboutOpen: false,
+  leftPanelVisible: true,
+
+  zoom: 1,
 
   async init() {
     try {
@@ -268,6 +283,30 @@ export const useStore = create<AppState>((set, get) => ({
     set({ newProjectOpen: false });
   },
 
+  openAbout() {
+    set({ aboutOpen: true });
+  },
+
+  closeAbout() {
+    set({ aboutOpen: false });
+  },
+
+  toggleLeftPanel() {
+    set((state) => ({ leftPanelVisible: !state.leftPanelVisible }));
+  },
+
+  zoomIn() {
+    set((state) => ({ zoom: Math.min(8, state.zoom * 1.2) }));
+  },
+
+  zoomOut() {
+    set((state) => ({ zoom: Math.max(0.2, state.zoom / 1.2) }));
+  },
+
+  zoomReset() {
+    set({ zoom: 1 });
+  },
+
   async newProject(familyName, styleName) {
     try {
       const project = await ipc.projectNew(familyName, styleName);
@@ -284,9 +323,14 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  async saveProject(path) {
+  async saveProject(path, forceDialog) {
     try {
-      const project = path ? await ipc.projectSave(path) : await ipc.projectSaveDialog();
+      const currentPath = get().project?.path ?? null;
+      const target = path ?? (forceDialog || !currentPath ? null : currentPath);
+      const project =
+        target !== null
+          ? await ipc.projectSave(target)
+          : await ipc.projectSaveDialog();
       if (!project) return;
       set({ project, meta: project.meta, status: `Сохранено: ${project.path ?? ''}` });
     } catch (error) {

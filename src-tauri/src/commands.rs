@@ -12,6 +12,7 @@ use fontlord_core::outline::build_glyph_outline;
 use fontlord_core::stroke::erase_strokes;
 use fontlord_core::unicode::{self, BlockInfo, CodepointInfo, SearchResult};
 
+use tauri::Manager;
 use tauri_plugin_dialog::DialogExt;
 
 use crate::state::AppState;
@@ -445,6 +446,21 @@ pub async fn font_export_dialog(
         units_per_em: project.meta.units_per_em,
         warnings: Vec::new(),
     }))
+}
+
+/// Устанавливает заголовок окна приложения.
+#[tauri::command]
+pub fn set_window_title(title: String, app: tauri::AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "главное окно не найдено".to_string())?;
+    window.set_title(&title).map_err(|e| e.to_string())
+}
+
+/// Завершает работу приложения.
+#[tauri::command]
+pub fn app_exit(app: tauri::AppHandle) {
+    app.exit(0);
 }
 
 /// Имя глифа по умолчанию для кода символа.

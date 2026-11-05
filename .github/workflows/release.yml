@@ -1,0 +1,85 @@
+name: Релиз
+
+# Сборка установочных пакетов и публикация релиза по тегу вида `v0.1.0`.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Версия релиза
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Сборка релизов
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-latest
+            target: x86_64-unknown-linux-gnu
+            bundles: deb,appimage,rpm
+            artifact: fontlord-linux
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            bundles: app,dmg
+            artifact: fontlord-macos-aarch64
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            bundles: app,dmg
+            artifact: fontlord-macos-x86_64
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            bundles: msi,nsis
+            artifact: fontlord-windows
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Установка системных зависимостей (Linux)
+        if: matrix.platform == 'linux-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
+            libxdo-dev patchelf build-essential file pkg-config
+
+      - name: Установка зависимостей фронтенда
+        run: pnpm --dir ui install --frozen-lockfile
+
+      - name: Сборка пакетов
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: .
+          tagName: ${{ github.ref_name }}
+          releaseName: Fontlord ${{ github.ref_name }}
+          releaseBody: |
+            Редактор шрифтов с векторными кистями.
+
+            Скачайте установщик для своей платформы и запустите Fontlord.
+          args: --bundles ${{ matrix.bundles }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: src-tauri/target/release/bundle/**
+          if-no-files-found: error

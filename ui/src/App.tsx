@@ -1,16 +1,29 @@
 /**
- * Корневой компонент приложения: заголовок, рабочая область и строка состояния.
+ * Корневой компонент приложения: меню, рабочая область и строка состояния.
  */
 
 import { useEffect } from 'react';
 
-import { FontPreview, GlyphInspector } from './components/GlyphInspector';
+import { AboutDialog } from './components/AboutDialog';
 import { FontSettings } from './components/FontSettings';
-import { NewProjectDialog } from './components/NewProjectDialog';
+import { FontPreview, GlyphInspector } from './components/GlyphInspector';
 import { GlyphCanvas } from './components/GlyphCanvas';
 import { BrushPanel } from './components/Inspector';
+import { MenuBar } from './components/MenuBar';
+import { NewProjectDialog } from './components/NewProjectDialog';
 import { UnicodePanel } from './components/UnicodePanel';
+import * as ipc from './ipc';
 import { useStore } from './store';
+
+/** Формирует заголовок окна по состоянию проекта. */
+function windowTitle(path: string | null, family: string, style: string): string {
+  if (path) {
+    const name = path.split(/[\\/]/).pop() ?? path;
+    return `Fontlord — ${name}`;
+  }
+  const base = `${family} ${style}`.trim();
+  return `Fontlord — ${base || 'Новый проект'}.fontlord`;
+}
 
 export function App() {
   const init = useStore((state) => state.init);
@@ -19,6 +32,8 @@ export function App() {
   const error = useStore((state) => state.error);
   const setError = useStore((state) => state.setError);
   const currentCodepoint = useStore((state) => state.currentCodepoint);
+  const glyph = useStore((state) => state.glyph);
+  const leftPanelVisible = useStore((state) => state.leftPanelVisible);
 
   const undo = useStore((state) => state.undo);
   const redo = useStore((state) => state.redo);
@@ -27,6 +42,13 @@ export function App() {
   const exportFont = useStore((state) => state.exportFont);
   const closeGlyph = useStore((state) => state.closeGlyph);
   const openNewProject = useStore((state) => state.openNewProject);
+  const openAbout = useStore((state) => state.openAbout);
+  const toggleLeftPanel = useStore((state) => state.toggleLeftPanel);
+  const zoomIn = useStore((state) => state.zoomIn);
+  const zoomOut = useStore((state) => state.zoomOut);
+  const zoomReset = useStore((state) => state.zoomReset);
+  const setBrushKind = useStore((state) => state.setBrushKind);
+  const deleteGlyph = useStore((state) => state.deleteGlyph);
 
   useEffect(() => {
     void init();
@@ -38,8 +60,148 @@ export function App() {
     return () => window.clearTimeout(timer);
   }, [error, setError]);
 
+  // Заголовок окна следует за проектом.
+  useEffect(() => {
+    if (!project) return;
+    const title = windowTitle(
+      project.path,
+      project.meta.familyName,
+      project.meta.styleName,
+    );
+    document.title = title;
+    void ipc.setWindowTitle(title).catch(() => undefined);
+  }, [project]);
+
+  // Горячие клавиши.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        target !== null &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable);
+      const ctrl = event.ctrlKey || event.metaKey;
+
+      if (ctrl) {
+        switch (event.key.toLowerCase()) {
+          case 'n':
+            event.preventDefault();
+            openNewProject();
+            return;
+          case 'o':
+            event.preventDefault();
+            void openProject();
+            return;
+          case 's':
+            event.preventDefault();
+            void saveProject(undefined, event.shiftKey);
+            return;
+          case 'e':
+            event.preventDefault();
+            void exportFont();
+            return;
+          case 'z':
+            event.preventDefault();
+            if (event.shiftKey) void redo();
+            else void undo();
+            return;
+          case 'y':
+            event.preventDefault();
+            void redo();
+            return;
+          case 'q':
+            event.preventDefault();
+            void ipc.appExit();
+            return;
+          case 'b':
+            event.preventDefault();
+            toggleLeftPanel();
+            return;
+          case '=':
+          case '+':
+            event.preventDefault();
+            zoomIn();
+            return;
+          case '-':
+            event.preventDefault();
+            zoomOut();
+            return;
+          case '0':
+            event.preventDefault();
+            zoomReset();
+            return;
+          default:
+            return;
+        }
+      }
+
+      if (typing) return;
+
+      switch (event.key) {
+        case 'Delete':
+        case 'Backspace':
+          if (glyph) {
+            event.preventDefault();
+            void deleteGlyph();
+          }
+          return;
+        case 'Escape':
+          closeGlyph();
+          return;
+        case 'F1':
+          event.preventDefault();
+          openAbout();
+          return;
+        default:
+          break;
+      }
+
+      switch (event.key.toLowerCase()) {
+        case 'b':
+          setBrushKind('pen');
+          break;
+        case 'm':
+          setBrushKind('marker');
+          break;
+        case 'n':
+          setBrushKind('broadNib');
+          break;
+        case 's':
+          setBrushKind('soft');
+          break;
+        case 'e':
+          setBrushKind('eraser');
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [
+    closeGlyph,
+    deleteGlyph,
+    exportFont,
+    glyph,
+    openAbout,
+    openNewProject,
+    openProject,
+    redo,
+    saveProject,
+    setBrushKind,
+    toggleLeftPanel,
+    undo,
+    zoomIn,
+    zoomOut,
+    zoomReset,
+  ]);
+
   return (
-    <div className="app">
+    <div className={`app${leftPanelVisible ? '' : ' no-left-panel'}`}>
+      <MenuBar />
+
       <header className="titlebar">
         <div className="brand">
           <span className="brand-mark">FL</span>
@@ -116,6 +278,7 @@ export function App() {
       </main>
 
       <NewProjectDialog />
+      <AboutDialog />
 
       <footer className="statusbar">
         <span>{status}</span>
