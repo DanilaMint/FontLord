@@ -1,0 +1,18 @@
+[package]
+name = "fontlord-ttf"
+description = "TrueType (glyf) font writer used by Fontlord to export font projects"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+fontlord-core.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+ttf-parser = "0.25"
+fontdue = "0.9"
