@@ -59,6 +59,7 @@ interface AppState {
   /* Служебное */
   status: string;
   error: string | null;
+  newProjectOpen: boolean;
 
   /* Действия */
   init: () => Promise<void>;
@@ -79,6 +80,8 @@ interface AppState {
   undo: () => Promise<void>;
   redo: () => Promise<void>;
   newProject: (familyName: string, styleName: string) => Promise<void>;
+  openNewProject: () => void;
+  closeNewProject: () => void;
   saveProject: (path?: string) => Promise<void>;
   openProject: () => Promise<void>;
   exportFont: () => Promise<void>;
@@ -107,6 +110,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   status: 'Готово',
   error: null,
+  newProjectOpen: false,
 
   async init() {
     try {
@@ -256,6 +260,14 @@ export const useStore = create<AppState>((set, get) => ({
     set({ status: 'Повтор' });
   },
 
+  openNewProject() {
+    set({ newProjectOpen: true });
+  },
+
+  closeNewProject() {
+    set({ newProjectOpen: false });
+  },
+
   async newProject(familyName, styleName) {
     try {
       const project = await ipc.projectNew(familyName, styleName);
@@ -264,6 +276,7 @@ export const useStore = create<AppState>((set, get) => ({
         meta: project.meta,
         currentCodepoint: null,
         glyph: null,
+        newProjectOpen: false,
         status: `Создан проект «${project.meta.familyName}»`,
       });
     } catch (error) {

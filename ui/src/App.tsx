@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 
 import { FontPreview, GlyphInspector } from './components/GlyphInspector';
 import { FontSettings } from './components/FontSettings';
+import { NewProjectDialog } from './components/NewProjectDialog';
 import { GlyphCanvas } from './components/GlyphCanvas';
 import { BrushPanel } from './components/Inspector';
 import { UnicodePanel } from './components/UnicodePanel';
@@ -25,7 +26,7 @@ export function App() {
   const openProject = useStore((state) => state.openProject);
   const exportFont = useStore((state) => state.exportFont);
   const closeGlyph = useStore((state) => state.closeGlyph);
-  const newProject = useStore((state) => state.newProject);
+  const openNewProject = useStore((state) => state.openNewProject);
 
   useEffect(() => {
     void init();
@@ -65,16 +66,7 @@ export function App() {
           <button type="button" onClick={() => void redo()} disabled={!project?.canRedo}>
             ⟳ Повторить
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              const family = window.prompt('Имя семейства шрифта', 'My Font');
-              if (family === null) return;
-              const style = window.prompt('Начертание', 'Regular');
-              if (style === null) return;
-              void newProject(family, style);
-            }}
-          >
+          <button type="button" onClick={openNewProject}>
             Создать
           </button>
           <button type="button" onClick={() => void openProject()}>
@@ -122,6 +114,8 @@ export function App() {
           <FontSettings />
         </aside>
       </main>
+
+      <NewProjectDialog />
 
       <footer className="statusbar">
         <span>{status}</span>

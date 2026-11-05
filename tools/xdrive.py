@@ -17,6 +17,11 @@ import time
 x11 = ctypes.CDLL(ctypes.util.find_library("X11"))
 xtst = ctypes.CDLL(ctypes.util.find_library("Xtst"))
 
+x11.XStringToKeysym.restype = ctypes.c_ulong
+x11.XStringToKeysym.argtypes = [ctypes.c_char_p]
+x11.XKeysymToKeycode.restype = ctypes.c_ubyte
+x11.XKeysymToKeycode.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
+x11.XSetInputFocus.argtypes = [ctypes.c_void_p, ctypes.c_ulong, ctypes.c_int, ctypes.c_ulong]
 x11.XOpenDisplay.restype = ctypes.c_void_p
 x11.XOpenDisplay.argtypes = [ctypes.c_char_p]
 x11.XFlush.argtypes = [ctypes.c_void_p]
@@ -28,6 +33,12 @@ xtst.XTestFakeMotionEvent.argtypes = [
     ctypes.c_ulong,
 ]
 xtst.XTestFakeButtonEvent.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_uint,
+    ctypes.c_bool,
+    ctypes.c_ulong,
+]
+xtst.XTestFakeKeyEvent.argtypes = [
     ctypes.c_void_p,
     ctypes.c_uint,
     ctypes.c_bool,
@@ -59,6 +70,37 @@ class Display:
         self.button(button, False)
         time.sleep(delay)
 
+    def focus(self, window: int) -> None:
+        """Передаёт фокус ввода указанному окну (нужно без оконного менеджера)."""
+        x11.XSetInputFocus(self.handle, window, 2, 0)
+        x11.XFlush(self.handle)
+
+    def key(self, keysym_name: str, pressed: bool) -> None:
+        """Нажимает клавишу по её названию в XKeysym (например, `a`, `Return`)."""
+        keysym = x11.XStringToKeysym(keysym_name.encode())
+        keycode = x11.XKeysymToKeycode(self.handle, keysym)
+        if keycode == 0:
+            raise ValueError(f"неизвестная клавиша: {keysym_name}")
+        xtst.XTestFakeKeyEvent(self.handle, keycode, pressed, 0)
+        x11.XFlush(self.handle)
+
+    def type_text(self, text: str, delay: float = 0.03) -> None:
+        """Набирает текст, учитывая регистр и пробелы."""
+        for character in text:
+            if character == " ":
+                self.key("space", True)
+                self.key("space", False)
+                time.sleep(delay)
+                continue
+            if character.isupper():
+                self.key("shift", True)
+                time.sleep(delay / 2)
+            self.key(character.lower(), True)
+            self.key(character.lower(), False)
+            if character.isupper():
+                self.key("shift", False)
+            time.sleep(delay)
+
     def drag(self, points: list[tuple[int, int]], button: int = 1, steps: int = 12) -> None:
         """Рисование ломаной с равномерным распределением шагов."""
         self.move(*points[0])
@@ -86,6 +128,13 @@ def main(argv: list[str]) -> int:
 
     if command == "click":
         display.click(int(argv[2]), int(argv[3]))
+    elif command == "focus":
+        display.focus(int(argv[2], 0))
+    elif command == "type":
+        display.type_text(argv[2])
+    elif command == "key":
+        display.key(argv[2], True)
+        display.key(argv[2], False)
     elif command == "drag":
         coordinates = [int(value) for value in argv[2:]]
         points = list(zip(coordinates[::2], coordinates[1::2]))
