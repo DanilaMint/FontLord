@@ -49,7 +49,7 @@ struct BuiltGlyph {
 /// Собирает шрифт TrueType из проекта.
 pub fn build_truetype(project: &FontProject) -> Result<Vec<u8>, TtfError> {
     let upem = project.meta.units_per_em;
-    if upem < 16 || upem > 16384 {
+    if !(16..=16384).contains(&upem) {
         return Err(TtfError::InvalidMetrics(format!(
             "единицы на em должны быть в диапазоне 16..=16384, получено {upem}"
         )));
@@ -62,16 +62,15 @@ pub fn build_truetype(project: &FontProject) -> Result<Vec<u8>, TtfError> {
     let mut built: Vec<BuiltGlyph> = Vec::with_capacity(entries.len() + 1);
     built.push(BuiltGlyph {
         data: Vec::new(),
-        advance_width: (upem / 2) as u16,
+        advance_width: upem / 2,
         lsb: 0,
         bbox: BoundingBox::default(),
     });
 
     let mut codepoint_to_gid: BTreeMap<u32, u16> = BTreeMap::new();
-    let mut gid = 1u16;
 
     let settings = OutlineSettings::default();
-    for (codepoint, glyph) in &entries {
+    for (gid, (codepoint, glyph)) in (1u16..).zip(entries.iter()) {
         let contours = collect_contours(glyph, &settings);
         let simple = to_simple_glyph(&contours);
         let data = encode_simple_glyph(&simple);
@@ -87,7 +86,6 @@ pub fn build_truetype(project: &FontProject) -> Result<Vec<u8>, TtfError> {
             bbox: simple.bbox,
         });
         codepoint_to_gid.insert(*codepoint, gid);
-        gid += 1;
     }
 
     // 2. Общие метрики.
@@ -414,13 +412,15 @@ fn build_name_table(project: &FontProject) -> Vec<u8> {
     let mut records = Writer::new();
     let mut storage = Writer::new();
     let count = strings.len();
-    // Смещение строк отсчитывается от начала таблицы.
+    // Начало области строк.
     let string_offset = 6 + count * 12;
     records.u16(0); // формат
     records.u16(count as u16);
     records.u16(string_offset as u16);
 
     for (id, text) in &strings {
+        // Смещение отсчитывается от начала области строк — так поступают
+        // все распространённые шрифты и все парсеры (ttf-parser, fontdue).
         let offset = storage.len();
         storage.utf16be_string(text);
         let length = storage.len() - offset;
@@ -429,7 +429,7 @@ fn build_name_table(project: &FontProject) -> Vec<u8> {
         records.u16(0x0409); // английский
         records.u16(*id);
         records.u16(length as u16);
-        records.u16((string_offset + offset) as u16);
+        records.u16(offset as u16);
     }
 
     let mut result = records.bytes;
@@ -527,7 +527,7 @@ fn build_post_table(project: &FontProject) -> Vec<u8> {
 }
 
 /// Таблица `head`.
-fn build_head_table(project: &FontProject, bbox: (i16, i16, i16, i16), upem: u16) -> Vec<u8> {
+fn build_head_table(_project: &FontProject, bbox: (i16, i16, i16, i16), upem: u16) -> Vec<u8> {
     let mut writer = Writer::new();
     writer.u32(0x00010000); // версия
     writer.u32(0x00010000); // fontRevision 1.0

@@ -31,6 +31,7 @@
 ```
 crates/fontlord-core   доменное ядро: модель, кисти, контуры, Unicode, формат проекта
 crates/fontlord-ttf    сборщик шрифтов TrueType
+crates/fontlord-cli    консольные утилиты: info, glyphs, export, demo
 src-tauri              IPC-слой Tauri и состояние приложения
 ui                     интерфейс на React + TypeScript + Vite
 tools                  скрипты окружения и вспомогательные утилиты
@@ -80,10 +81,21 @@ cargo clippy --workspace --all-targets
 cargo fmt --all -- --check
 ```
 
-Демонстрационный шрифт собирается командой:
+Консольные утилиты позволяют работать с проектами без графического
+приложения:
+
+```bash
+cargo run -p fontlord-cli -- demo /tmp/demo.fontlord      # демо-проект
+cargo run -p fontlord-cli -- info /tmp/demo.fontlord       # сводка
+cargo run -p fontlord-cli -- glyphs /tmp/demo.fontlord     # список глифов
+cargo run -p fontlord-cli -- export /tmp/demo.fontlord /tmp/demo.ttf
+```
+
+Демонстрационный шрифт собирается и растеризуется командами:
 
 ```bash
 cargo run -p fontlord-ttf --example export_sample -- demo.ttf
+cargo run -p fontlord-ttf --example render_glyphs -- demo.ttf glyphs.ppm
 ```
 
 ## Лицензия

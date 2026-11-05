@@ -52,9 +52,7 @@ impl<'a> LigatureBuilder<'a> {
 
         for (index, codepoint) in components.iter().enumerate() {
             let glyph = self.project.glyph(*codepoint).ok_or_else(|| {
-                CoreError::invalid(format!(
-                    "компонент U+{codepoint:04X} отсутствует в проекте"
-                ))
+                CoreError::invalid(format!("компонент U+{codepoint:04X} отсутствует в проекте"))
             })?;
             if index > 0 {
                 placements.push(ComponentPlacement {
@@ -86,7 +84,11 @@ impl<'a> LigatureBuilder<'a> {
             .result
             .ok_or_else(|| CoreError::invalid("у лигатуры не задан символ результата"))?;
 
-        let mut glyph = Glyph::new(result_codepoint, ligature.name.clone(), layout.advance_width);
+        let mut glyph = Glyph::new(
+            result_codepoint,
+            ligature.name.clone(),
+            layout.advance_width,
+        );
         glyph.components = layout
             .components
             .iter()

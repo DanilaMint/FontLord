@@ -168,10 +168,7 @@ pub fn bounding_box(points: &[Point]) -> BBox {
 
 /// Длина полилинии.
 pub fn polyline_length(points: &[Point]) -> f32 {
-    points
-        .windows(2)
-        .map(|w| w[1].distance(w[0]))
-        .sum::<f32>()
+    points.windows(2).map(|w| w[1].distance(w[0])).sum::<f32>()
 }
 
 /// Удаляет подряд идущие совпадающие точки.
@@ -361,14 +358,14 @@ pub fn polygon_signed_area(points: &[Point]) -> f32 {
 }
 
 /// Разворачивает многоугольник, если его ориентированная площадь отрицательна.
-pub fn ensure_ccw(points: &mut Vec<Point>) {
+pub fn ensure_ccw(points: &mut [Point]) {
     if polygon_signed_area(points) < 0.0 {
         points.reverse();
     }
 }
 
 /// Разворачивает многоугольник, если его ориентированная площадь положительна.
-pub fn ensure_cw(points: &mut Vec<Point>) {
+pub fn ensure_cw(points: &mut [Point]) {
     if polygon_signed_area(points) > 0.0 {
         points.reverse();
     }

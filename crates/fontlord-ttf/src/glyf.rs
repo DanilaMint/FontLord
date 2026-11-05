@@ -164,7 +164,7 @@ pub fn encode_simple_glyph(glyph: &SimpleGlyph) -> Vec<u8> {
                 }
                 // Для короткого смещения хранится модуль значения,
                 // а знак задаётся битом X_SAME_OR_POSITIVE.
-                x_data.push(dx.abs() as u8);
+                x_data.push(dx.unsigned_abs() as u8);
             } else {
                 x_data.extend_from_slice(&(dx as i16).to_be_bytes());
             }
@@ -178,7 +178,7 @@ pub fn encode_simple_glyph(glyph: &SimpleGlyph) -> Vec<u8> {
                 }
                 // Для короткого смещения хранится модуль значения,
                 // а знак задаётся битом Y_SAME_OR_POSITIVE.
-                y_data.push(dy.abs() as u8);
+                y_data.push(dy.unsigned_abs() as u8);
             } else {
                 y_data.extend_from_slice(&(dy as i16).to_be_bytes());
             }
@@ -213,10 +213,7 @@ pub fn encode_simple_glyph(glyph: &SimpleGlyph) -> Vec<u8> {
 /// Кодирует составной глиф из ссылок на другие глифы.
 ///
 /// `components` — список `(glyph_id, dx, dy)`.
-pub fn encode_composite_glyph(
-    components: &[(u16, i16, i16)],
-    bbox: BoundingBox,
-) -> Vec<u8> {
+pub fn encode_composite_glyph(components: &[(u16, i16, i16)], bbox: BoundingBox) -> Vec<u8> {
     let mut writer = Writer::new();
     writer.i16(-1); // составной глиф
     writer.i16(bbox.x_min);

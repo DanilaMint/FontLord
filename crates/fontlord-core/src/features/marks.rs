@@ -41,14 +41,12 @@ impl<'a> MarkAttacher<'a> {
 
     /// Рассчитывает смещение знака относительно базовой буквы.
     pub fn place(&self, base: u32, mark: u32, anchor_name: &str) -> CoreResult<MarkPlacement> {
-        let base_glyph = self
-            .project
-            .glyph(base)
-            .ok_or_else(|| CoreError::invalid(format!("база U+{base:04X} отсутствует в проекте")))?;
-        let mark_glyph = self
-            .project
-            .glyph(mark)
-            .ok_or_else(|| CoreError::invalid(format!("знак U+{mark:04X} отсутствует в проекте")))?;
+        let base_glyph = self.project.glyph(base).ok_or_else(|| {
+            CoreError::invalid(format!("база U+{base:04X} отсутствует в проекте"))
+        })?;
+        let mark_glyph = self.project.glyph(mark).ok_or_else(|| {
+            CoreError::invalid(format!("знак U+{mark:04X} отсутствует в проекте"))
+        })?;
 
         let base_anchor = Self::anchor_of(base_glyph, anchor_name).unwrap_or(Anchor {
             name: anchor_name.to_string(),
@@ -73,10 +71,9 @@ impl<'a> MarkAttacher<'a> {
     /// Создаёт глиф со знаком (заготовка операции).
     pub fn compose(&self, base: u32, mark: u32, anchor_name: &str) -> CoreResult<Glyph> {
         let placement = self.place(base, mark, anchor_name)?;
-        let base_glyph = self
-            .project
-            .glyph(base)
-            .ok_or_else(|| CoreError::invalid(format!("база U+{base:04X} отсутствует в проекте")))?;
+        let base_glyph = self.project.glyph(base).ok_or_else(|| {
+            CoreError::invalid(format!("база U+{base:04X} отсутствует в проекте"))
+        })?;
 
         let mut glyph = base_glyph.clone();
         glyph.name = format!(

@@ -5,6 +5,7 @@
 import { useEffect } from 'react';
 
 import { FontPreview, GlyphInspector } from './components/GlyphInspector';
+import { FontSettings } from './components/FontSettings';
 import { GlyphCanvas } from './components/GlyphCanvas';
 import { BrushPanel } from './components/Inspector';
 import { UnicodePanel } from './components/UnicodePanel';
@@ -24,6 +25,7 @@ export function App() {
   const openProject = useStore((state) => state.openProject);
   const exportFont = useStore((state) => state.exportFont);
   const closeGlyph = useStore((state) => state.closeGlyph);
+  const newProject = useStore((state) => state.newProject);
 
   useEffect(() => {
     void init();
@@ -62,6 +64,18 @@ export function App() {
           </button>
           <button type="button" onClick={() => void redo()} disabled={!project?.canRedo}>
             ⟳ Повторить
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const family = window.prompt('Имя семейства шрифта', 'My Font');
+              if (family === null) return;
+              const style = window.prompt('Начертание', 'Regular');
+              if (style === null) return;
+              void newProject(family, style);
+            }}
+          >
+            Создать
           </button>
           <button type="button" onClick={() => void openProject()}>
             Открыть
@@ -102,9 +116,10 @@ export function App() {
         </section>
 
         <aside className="sidebar right">
+          <FontPreview />
           <GlyphInspector />
           <BrushPanel />
-          <FontPreview />
+          <FontSettings />
         </aside>
       </main>
 

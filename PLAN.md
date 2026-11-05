@@ -28,7 +28,8 @@ Fontlord — редактор шрифтов, в котором символ р�
 fontlord/
 ├── crates/
 │   ├── fontlord-core/     домен: модель, кисти, контуры, индекс Unicode, формат проекта
-│   └── fontlord-ttf/      сборщик шрифтов TrueType (таблицы glyf, cmap, name, OS/2, kern)
+│   ├── fontlord-ttf/      сборщик шрифтов TrueType (таблицы glyf, cmap, name, OS/2, kern)
+│   └── fontlord-cli/      консольные утилиты: info, glyphs, export, demo
 ├── src-tauri/             оболочка Tauri: IPC-команды, состояние, история изменений
 ├── ui/                    фронтенд: React + TypeScript + Vite
 └── tools/                 скрипты сборки окружения, генерация иконок, снимки экрана
@@ -105,7 +106,10 @@ fontlord/
   формат проекта, индекс Unicode, лигатуры, диакритика.
 * Интеграционные тесты сборщика шрифта: разбор `ttf-parser`, растеризация
   `fontdue`.
-* Сборочный пример `export_sample`, генерирующий демонстрационный `.ttf`.
+* Сборочные примеры: `export_sample` (демонстрационный `.ttf`) и
+  `render_glyphs` (растеризация глифов в PPM для визуальной проверки).
+* Консольные утилиты `fontlord-cli`: сводка по проекту, список глифов,
+  сборка шрифта, генерация демонстрационного проекта.
 
 ### Этап 8. Дальнейшее развитие — `[ ]`
 
@@ -132,6 +136,11 @@ cargo fmt --all -- --check
 
 cd ui && pnpm install && pnpm build   # сборка фронтенда
 cargo build -p fontlord               # сборка приложения
+
+# Сквозная проверка без графического интерфейса:
+cargo run -p fontlord-cli -- demo /tmp/demo.fontlord
+cargo run -p fontlord-cli -- export /tmp/demo.fontlord /tmp/demo.ttf
+cargo run -p fontlord-ttf --example render_glyphs -- /tmp/demo.ttf /tmp/glyphs.ppm
 ```
 
 ## 5. Риски и ограничения

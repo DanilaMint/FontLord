@@ -67,10 +67,7 @@ fn project_state(state: &AppState) -> ProjectState {
         meta: inner.project.meta.clone(),
         glyph_count: inner.project.glyphs.len(),
         glyphs: inner.project.glyph_codepoints(),
-        path: inner
-            .path
-            .as_ref()
-            .map(|p| p.to_string_lossy().to_string()),
+        path: inner.path.as_ref().map(|p| p.to_string_lossy().to_string()),
         dirty: inner.dirty,
         can_undo: inner.can_undo(),
         can_redo: inner.can_redo(),
@@ -121,7 +118,10 @@ pub fn project_new(
 
 /// Открывает проект из файла.
 #[tauri::command]
-pub fn project_open(path: String, state: tauri::State<'_, AppState>) -> Result<ProjectState, String> {
+pub fn project_open(
+    path: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<ProjectState, String> {
     let path = PathBuf::from(path);
     let project = fontlord_core::project::load(&path).map_err(|e| e.to_string())?;
     state.replace_project(project, Some(path));
@@ -136,9 +136,9 @@ pub fn project_save(
 ) -> Result<ProjectState, String> {
     let target: PathBuf = match path {
         Some(p) => PathBuf::from(p),
-        None => state.with(|inner| inner.path.clone()).ok_or(
-            "Проект ещё ни разу не сохранён — укажите имя файла.",
-        )?,
+        None => state
+            .with(|inner| inner.path.clone())
+            .ok_or("Проект ещё ни разу не сохранён — укажите имя файла.")?,
     };
 
     let project = state.project();
@@ -276,9 +276,9 @@ pub fn glyph_set_metrics(
         inner.push_history();
         let settings = inner.outline_settings;
         let project = &mut inner.project;
-        let glyph = project.glyph_mut(codepoint).ok_or_else(|| {
-            format!("Символ U+{codepoint:04X} не найден")
-        })?;
+        let glyph = project
+            .glyph_mut(codepoint)
+            .ok_or_else(|| format!("Символ U+{codepoint:04X} не найден"))?;
         if let Some(width) = advance_width {
             glyph.advance_width = width;
         }
@@ -305,10 +305,7 @@ pub fn glyph_delete(codepoint: u32, state: tauri::State<'_, AppState>) -> Result
 
 /// Возвращает контуры глифа (пересчитанные по штрихам).
 #[tauri::command]
-pub fn glyph_outline(
-    codepoint: u32,
-    state: tauri::State<'_, AppState>,
-) -> Option<OutlineResult> {
+pub fn glyph_outline(codepoint: u32, state: tauri::State<'_, AppState>) -> Option<OutlineResult> {
     state.with(|inner| {
         let glyph = inner.project.glyph(codepoint)?;
         let contours = build_glyph_outline(glyph, &inner.outline_settings);
@@ -354,16 +351,19 @@ pub async fn project_open_dialog(
     app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Result<Option<ProjectState>, String> {
-    let path = app
-        .dialog()
+    let (sender, mut receiver) = tauri::async_runtime::channel::<Option<PathBuf>>(1);
+
+    app.dialog()
         .file()
         .set_title("Открыть проект Fontlord")
         .add_filter("Проект Fontlord", &["fontlord"])
         .add_filter("Все файлы", &["*"])
-        .blocking_pick_file()
-        .and_then(|file| file.into_path().ok());
+        .pick_file(move |file| {
+            let path = file.and_then(|f| f.into_path().ok());
+            drop(sender.send(path));
+        });
 
-    let Some(path) = path else {
+    let Some(path) = receiver.recv().await.unwrap_or(None) else {
         return Ok(None);
     };
 
@@ -384,16 +384,19 @@ pub async fn project_save_dialog(
         .and_then(|p| p.file_name().map(|n| n.to_string_lossy().to_string()))
         .unwrap_or_else(|| "project.fontlord".to_string());
 
-    let path = app
-        .dialog()
+    let (sender, mut receiver) = tauri::async_runtime::channel::<Option<PathBuf>>(1);
+
+    app.dialog()
         .file()
         .set_title("Сохранить проект")
         .set_file_name(&default_name)
         .add_filter("Проект Fontlord", &["fontlord"])
-        .blocking_save_file()
-        .and_then(|file| file.into_path().ok());
+        .save_file(move |file| {
+            let path = file.and_then(|f| f.into_path().ok());
+            drop(sender.send(path));
+        });
 
-    let Some(path) = path else {
+    let Some(path) = receiver.recv().await.unwrap_or(None) else {
         return Ok(None);
     };
 
@@ -415,16 +418,19 @@ pub async fn font_export_dialog(
     let family = state.with(|inner| inner.project.meta.family_name.clone());
     let default_name = format!("{}.ttf", family.replace(' ', ""));
 
-    let path = app
-        .dialog()
+    let (sender, mut receiver) = tauri::async_runtime::channel::<Option<PathBuf>>(1);
+
+    app.dialog()
         .file()
         .set_title("Экспортировать шрифт")
         .set_file_name(&default_name)
         .add_filter("Шрифт TrueType", &["ttf"])
-        .blocking_save_file()
-        .and_then(|file| file.into_path().ok());
+        .save_file(move |file| {
+            let path = file.and_then(|f| f.into_path().ok());
+            drop(sender.send(path));
+        });
 
-    let Some(path) = path else {
+    let Some(path) = receiver.recv().await.unwrap_or(None) else {
         return Ok(None);
     };
 

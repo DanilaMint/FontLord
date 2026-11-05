@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/fontlord-core", "crates/fontlord-ttf", "src-tauri"]
+members = ["crates/fontlord-core", "crates/fontlord-ttf", "crates/fontlord-cli", "src-tauri"]
 
 [workspace.package]
 version = "0.1.0"
@@ -13,6 +13,7 @@ authors = ["Fontlord contributors"]
 [workspace.dependencies]
 fontlord-core = { path = "crates/fontlord-core" }
 fontlord-ttf = { path = "crates/fontlord-ttf" }
+fontlord-cli = { path = "crates/fontlord-cli" }
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"

@@ -9,6 +9,7 @@ import type {
   BrushPreset,
   CodepointInfo,
   ExportReport,
+  FontMeta,
   Glyph,
   OutlineResult,
   ProjectState,
@@ -68,6 +69,11 @@ export function projectSaveDialog(): Promise<ProjectState | null> {
 /** Сохранение проекта в указанный файл. */
 export function projectSave(path: string): Promise<ProjectState> {
   return invoke<ProjectState>('project_save', { path: path ?? null });
+}
+
+/** Обновление метаданных шрифта. */
+export function projectSetMeta(meta: FontMeta): Promise<ProjectState> {
+  return invoke<ProjectState>('project_set_meta', { meta });
 }
 
 /** Отмена последнего изменения. */

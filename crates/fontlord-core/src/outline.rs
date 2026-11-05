@@ -4,9 +4,7 @@
 //! (формат TrueType). Углы сохраняются острыми, гладкие участки аппроксимируются
 //! кривыми с заданной погрешностью.
 
-use crate::geometry::{
-    Point, dedup, polygon_signed_area, simplify_rdp, turn_angle,
-};
+use crate::geometry::{Point, dedup, polygon_signed_area, simplify_rdp, turn_angle};
 use crate::model::{Contour, ContourPoint, Glyph};
 use crate::stroke::stroke_to_polygons;
 
@@ -87,9 +85,7 @@ pub fn fit_polygon(points: &[Point], settings: &OutlineSettings) -> Vec<ContourP
         let start = simplified[0];
         let need_start = match out.last() {
             None => true,
-            Some(last) => {
-                (last.x - start.x).abs() > 0.01 || (last.y - start.y).abs() > 0.01
-            }
+            Some(last) => (last.x - start.x).abs() > 0.01 || (last.y - start.y).abs() > 0.01,
         };
         if need_start {
             out.push(ContourPoint::on_curve(start.x, start.y));
@@ -174,7 +170,10 @@ fn fit_chain(points: &[Point], tolerance: f32, out: &mut Vec<ContourPoint>) {
 
     if max_error <= tolerance || points.len() <= 3 {
         out.push(ContourPoint::off_curve(control.x, control.y));
-        out.push(ContourPoint::on_curve(points[points.len() - 1].x, points[points.len() - 1].y));
+        out.push(ContourPoint::on_curve(
+            points[points.len() - 1].x,
+            points[points.len() - 1].y,
+        ));
         return;
     }
 
@@ -205,9 +204,7 @@ fn fit_quadratic(points: &[Point]) -> (Point, Vec<f32>) {
     }
     params.push(0.0);
     if total <= f32::EPSILON {
-        for _ in 1..points.len() {
-            params.push(0.0);
-        }
+        params.resize(points.len(), 0.0);
     } else {
         for len in lengths {
             params.push(len / total);
@@ -257,7 +254,11 @@ mod tests {
     use crate::model::{Stroke, StrokePoint};
 
     fn rectangle_stroke() -> Stroke {
-        let mut stroke = Stroke::new(1, BrushKind::Marker, BrushSettings::for_kind(BrushKind::Marker));
+        let mut stroke = Stroke::new(
+            1,
+            BrushKind::Marker,
+            BrushSettings::for_kind(BrushKind::Marker),
+        );
         stroke.closed = true;
         stroke.points = vec![
             StrokePoint::new(0.0, 0.0, 0.8),
@@ -285,7 +286,10 @@ mod tests {
         let mut points = Vec::new();
         for i in 0..=32 {
             let t = i as f32 / 32.0;
-            points.push(Point::new(t * 100.0, (t * std::f32::consts::TAU).sin() * 20.0));
+            points.push(Point::new(
+                t * 100.0,
+                (t * std::f32::consts::TAU).sin() * 20.0,
+            ));
         }
         let fitted = fit_polygon(&points, &OutlineSettings::default());
         assert!(fitted.len() >= 4);

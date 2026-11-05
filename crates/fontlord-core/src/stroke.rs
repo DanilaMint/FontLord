@@ -14,8 +14,8 @@
 
 use crate::brush::{BrushKind, BrushSettings};
 use crate::geometry::{
-    Point, dedup, ensure_ccw, ensure_cw, polygon_signed_area, resample, smooth_pressures,
-    smoothstep, polyline_length,
+    Point, dedup, ensure_ccw, ensure_cw, polygon_signed_area, polyline_length, resample,
+    smooth_pressures, smoothstep,
 };
 use crate::model::{Stroke, StrokePoint};
 
@@ -32,7 +32,11 @@ pub struct StrokePolygon {
 const MIN_POINT_DISTANCE: f32 = 0.75;
 
 /// Сглаживает осевую линию штриха (Катмулл–Ром по позициям, линейно по нажиму).
-fn smooth_centerline(points: &[StrokePoint], closed: bool, subdivisions: usize) -> Vec<StrokePoint> {
+fn smooth_centerline(
+    points: &[StrokePoint],
+    closed: bool,
+    subdivisions: usize,
+) -> Vec<StrokePoint> {
     if points.len() < 3 {
         return points.to_vec();
     }
@@ -185,7 +189,10 @@ pub fn stroke_to_polygons(stroke: &Stroke) -> Vec<StrokePolygon> {
     let smoothed = smooth_centerline(&samples, closed, 8);
     let step = (settings.width / 14.0).max(1.0);
     let (positions, press) = resample(
-        &smoothed.iter().map(|p| Point::new(p.x, p.y)).collect::<Vec<_>>(),
+        &smoothed
+            .iter()
+            .map(|p| Point::new(p.x, p.y))
+            .collect::<Vec<_>>(),
         &smoothed.iter().map(|p| p.pressure).collect::<Vec<_>>(),
         step,
     );
@@ -379,12 +386,7 @@ mod tests {
 
     #[test]
     fn closed_stroke_produces_hole() {
-        let mut stroke = stroke_with(&[
-            (0.0, 0.0),
-            (200.0, 0.0),
-            (200.0, 200.0),
-            (0.0, 200.0),
-        ]);
+        let mut stroke = stroke_with(&[(0.0, 0.0), (200.0, 0.0), (200.0, 200.0), (0.0, 200.0)]);
         stroke.closed = true;
         let polygons = stroke_to_polygons(&stroke);
         assert_eq!(polygons.len(), 2);
@@ -406,19 +408,12 @@ mod tests {
 
     #[test]
     fn eraser_removes_touched_strokes() {
-        let mut strokes = vec![
-            stroke_with(&[(0.0, 0.0), (50.0, 0.0)]),
-            {
-                let mut s = stroke_with(&[(500.0, 0.0), (600.0, 0.0)]);
-                s.id = 2;
-                s
-            },
-        ];
-        let removed = erase_strokes(
-            &mut strokes,
-            &[Point::new(10.0, 0.0)],
-            20.0,
-        );
+        let mut strokes = vec![stroke_with(&[(0.0, 0.0), (50.0, 0.0)]), {
+            let mut s = stroke_with(&[(500.0, 0.0), (600.0, 0.0)]);
+            s.id = 2;
+            s
+        }];
+        let removed = erase_strokes(&mut strokes, &[Point::new(10.0, 0.0)], 20.0);
         assert_eq!(removed, vec![1]);
         assert_eq!(strokes.len(), 1);
     }

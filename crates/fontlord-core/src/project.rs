@@ -127,10 +127,7 @@ mod tests {
     #[test]
     fn roundtrip_through_json() {
         let mut project = FontProject::new("Test", "Regular");
-        project.glyphs.insert(
-            0x0041,
-            Glyph::new(0x0041, "A", 600),
-        );
+        project.glyphs.insert(0x0041, Glyph::new(0x0041, "A", 600));
         let json = to_json(&project).unwrap();
         let restored = from_json(&json).unwrap();
         assert_eq!(restored.meta.family_name, "Test");

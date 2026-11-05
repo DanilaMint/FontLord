@@ -29,8 +29,8 @@ pub use model::{
     Anchor, BrushSettings, Contour, ContourPoint, FeatureRule, FontMeta, FontProject, Glyph,
     KernPair, Ligature, MarkSpec, Stroke, StrokePoint,
 };
-pub use outline::{build_glyph_outline, OutlineSettings};
-pub use project::{ProjectDocument, PROJECT_FORMAT_VERSION};
+pub use outline::{OutlineSettings, build_glyph_outline};
+pub use project::{PROJECT_FORMAT_VERSION, ProjectDocument};
 
 /// Наиболее часто используемые типы ядра.
 pub mod prelude {
@@ -39,7 +39,7 @@ pub mod prelude {
     pub use crate::features::ligatures::LigatureBuilder;
     pub use crate::features::marks::MarkAttacher;
     pub use crate::model::*;
-    pub use crate::outline::{build_glyph_outline, OutlineSettings};
+    pub use crate::outline::{OutlineSettings, build_glyph_outline};
     pub use crate::project::ProjectDocument;
     pub use crate::unicode::{BlockInfo, CodepointInfo, UnicodeIndex};
 }

@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::brush::BrushKind;
 pub use crate::brush::BrushSettings;
-use crate::outline::{build_glyph_outline, OutlineSettings};
+use crate::outline::{OutlineSettings, build_glyph_outline};
 
 /// Точка штриха с параметром нажима.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -80,12 +80,20 @@ pub struct ContourPoint {
 impl ContourPoint {
     /// Создаёт точку на контуре.
     pub const fn on_curve(x: f32, y: f32) -> Self {
-        Self { x, y, on_curve: true }
+        Self {
+            x,
+            y,
+            on_curve: true,
+        }
     }
 
     /// Создаёт управляющую точку.
     pub const fn off_curve(x: f32, y: f32) -> Self {
-        Self { x, y, on_curve: false }
+        Self {
+            x,
+            y,
+            on_curve: false,
+        }
     }
 }
 
@@ -375,9 +383,9 @@ impl FontProject {
 
     /// Создаёт глиф, если его ещё нет, и возвращает изменяемую ссылку.
     pub fn glyph_mut_or_create(&mut self, codepoint: u32, name: impl Into<String>) -> &mut Glyph {
-        self.glyphs.entry(codepoint).or_insert_with(|| {
-            Glyph::new(codepoint, name, self.meta.units_per_em / 2)
-        })
+        self.glyphs
+            .entry(codepoint)
+            .or_insert_with(|| Glyph::new(codepoint, name, self.meta.units_per_em / 2))
     }
 
     /// Удаляет глиф.
@@ -394,7 +402,8 @@ impl FontProject {
 
     /// Контуры глифа (с пересчётом, если глиф существует).
     pub fn glyph_outline(&self, codepoint: u32) -> Option<Vec<Contour>> {
-        self.glyph(codepoint).map(|g| build_glyph_outline(g, &OutlineSettings::default()))
+        self.glyph(codepoint)
+            .map(|g| build_glyph_outline(g, &OutlineSettings::default()))
     }
 
     /// Коды символов глифов проекта.

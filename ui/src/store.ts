@@ -78,6 +78,7 @@ interface AppState {
   deleteGlyph: () => Promise<void>;
   undo: () => Promise<void>;
   redo: () => Promise<void>;
+  newProject: (familyName: string, styleName: string) => Promise<void>;
   saveProject: (path?: string) => Promise<void>;
   openProject: () => Promise<void>;
   exportFont: () => Promise<void>;
@@ -253,6 +254,21 @@ export const useStore = create<AppState>((set, get) => ({
       set({ glyph: await ipc.glyphGet(codepoint) });
     }
     set({ status: 'Повтор' });
+  },
+
+  async newProject(familyName, styleName) {
+    try {
+      const project = await ipc.projectNew(familyName, styleName);
+      set({
+        project,
+        meta: project.meta,
+        currentCodepoint: null,
+        glyph: null,
+        status: `Создан проект «${project.meta.familyName}»`,
+      });
+    } catch (error) {
+      set({ error: String(error) });
+    }
   },
 
   async saveProject(path) {

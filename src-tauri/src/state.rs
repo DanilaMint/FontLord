@@ -58,7 +58,10 @@ impl AppState {
 
     /// Выполняет операцию над состоянием под блокировкой.
     pub fn with<R>(&self, f: impl FnOnce(&mut Inner) -> R) -> R {
-        let mut guard = self.inner.lock().expect("состояние приложения заблокировано");
+        let mut guard = self
+            .inner
+            .lock()
+            .expect("состояние приложения заблокировано");
         f(&mut guard)
     }
 
@@ -94,7 +97,8 @@ impl Inner {
     pub fn undo(&mut self) -> bool {
         match self.history.pop() {
             Some(previous) => {
-                self.redo_stack.push(std::mem::replace(&mut self.project, previous));
+                self.redo_stack
+                    .push(std::mem::replace(&mut self.project, previous));
                 true
             }
             None => false,
@@ -105,7 +109,8 @@ impl Inner {
     pub fn redo(&mut self) -> bool {
         match self.redo_stack.pop() {
             Some(next) => {
-                self.history.push(std::mem::replace(&mut self.project, next));
+                self.history
+                    .push(std::mem::replace(&mut self.project, next));
                 true
             }
             None => false,

@@ -659,6 +659,16 @@ input[type='range']::-moz-range-thumb {
   font-size: 10px;
 }
 
+.meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 8px;
+}
+
+.meta-grid .field {
+  margin-bottom: 6px;
+}
+
 .preview-sample {
   font-size: 26px;
   margin: 4px 0 8px;

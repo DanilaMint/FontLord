@@ -7,10 +7,11 @@
 use serde::{Deserialize, Serialize};
 
 /// Тип кисти.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum BrushKind {
     /// Перо: ширина следует за нажимом, концы сужаются.
+    #[default]
     Pen,
     /// Маркер: почти постоянная ширина, скруглённые концы.
     Marker,
@@ -20,12 +21,6 @@ pub enum BrushKind {
     Soft,
     /// Ластик: удаляет целые штрихи, которых касается.
     Eraser,
-}
-
-impl Default for BrushKind {
-    fn default() -> Self {
-        Self::Pen
-    }
 }
 
 impl BrushKind {
