@@ -41,7 +41,7 @@ pub mod prelude {
     pub use crate::model::*;
     pub use crate::outline::{OutlineSettings, build_glyph_outline};
     pub use crate::project::ProjectDocument;
-    pub use crate::unicode::{BlockInfo, CodepointInfo, UnicodeIndex};
+    pub use crate::unicode::{BlockInfo, CodepointInfo, UnicodeIndex, postscript_name};
 }
 
 /// Версия формата данных ядра (инкрементируется при несовместимых изменениях).

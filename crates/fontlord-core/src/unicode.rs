@@ -324,6 +324,35 @@ impl UnicodeIndex {
     }
 }
 
+/// Имя глифа в стиле PostScript.
+///
+/// Короткие имена удобнее для пользователя и совместимы с большинством
+/// редакторов шрифтов: `LATIN CAPITAL LETTER A` превращается в `A`,
+/// `DIGIT ZERO` — в `zero`, остальные символы получают имя `uniXXXX`.
+pub fn postscript_name(codepoint: u32) -> String {
+    let Some(name) = index().name(codepoint) else {
+        return format!("uni{codepoint:04X}");
+    };
+
+    let words: Vec<&str> = name.split(' ').collect();
+    if let Some(last) = words.last() {
+        let is_letter = last.len() == 1 && last.chars().all(|c| c.is_ascii_alphabetic());
+        if is_letter && name.contains("LETTER") {
+            // В именах Unicode регистр не указан — восстанавливаем его по типу буквы.
+            return if name.contains("SMALL LETTER") {
+                last.to_lowercase()
+            } else {
+                last.to_uppercase()
+            };
+        }
+        if name.contains("DIGIT") {
+            return last.to_lowercase();
+        }
+    }
+
+    format!("uni{codepoint:04X}")
+}
+
 /// Разбирает запрос вида `U+0041`, `u+41`, `0x41`, `0041`.
 fn parse_codepoint_query(query: &str) -> Option<u32> {
     let trimmed = query.trim();
@@ -378,6 +407,14 @@ mod tests {
         let result = index().search("U+0041", 0, 10);
         assert_eq!(result.total, 1);
         assert_eq!(result.items[0].codepoint, 0x0041);
+    }
+
+    #[test]
+    fn postscript_names_are_short() {
+        assert_eq!(postscript_name(0x0041), "A");
+        assert_eq!(postscript_name(0x0061), "a");
+        assert_eq!(postscript_name(0x0030), "zero");
+        assert_eq!(postscript_name(0x2603), "uni2603");
     }
 
     #[test]

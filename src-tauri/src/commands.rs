@@ -449,8 +449,5 @@ pub async fn font_export_dialog(
 
 /// Имя глифа по умолчанию для кода символа.
 fn glyph_name(codepoint: u32) -> String {
-    match unicode::index().info(codepoint) {
-        Some(info) => info.name.clone(),
-        None => format!("uni{codepoint:04X}"),
-    }
+    unicode::postscript_name(codepoint)
 }
