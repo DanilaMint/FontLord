@@ -1,0 +1,31 @@
+[workspace]
+resolver = "3"
+members = ["crates/fontlord-core", "crates/fontlord-ttf", "src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/fontlord/fontlord"
+authors = ["Fontlord contributors"]
+
+[workspace.dependencies]
+fontlord-core = { path = "crates/fontlord-core" }
+fontlord-ttf = { path = "crates/fontlord-ttf" }
+
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+i_overlay = "9.0"
+unicode_names2 = "4.0"
+unicode-blocks = "0.1"
+unicode_categories = "0.1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

@@ -1,0 +1,25 @@
+# Сборка Rust
+/target
+**/*.rs.bk
+
+# Локальное окружение сборки
+/.local-sys/
+/.cargo-home/
+/.npm-cache/
+/.pnpm-store/
+
+# Фронтенд
+/ui/node_modules/
+/ui/dist/
+/ui/.tsbuild/
+/ui/tsconfig.tsbuildinfo
+
+# Проекты и артефакты
+*.fontlord
+*.ttf
+!crates/fontlord-ttf/tests/**/*.ttf
+*.tmp-save
+
+# Прочее
+.DS_Store
+*.log
