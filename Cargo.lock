@@ -912,7 +912,7 @@ dependencies = [
 
 [[package]]
 name = "fontlord"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "fontlord-core",
  "fontlord-ttf",
@@ -929,7 +929,7 @@ dependencies = [
 
 [[package]]
 name = "fontlord-cli"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -939,7 +939,7 @@ dependencies = [
 
 [[package]]
 name = "fontlord-core"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -951,7 +951,7 @@ dependencies = [
 
 [[package]]
 name = "fontlord-ttf"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "brotli 8.0.4",
  "flate2",

@@ -2,13 +2,29 @@
  * Окно «О программе».
  */
 
+import { getVersion } from '@tauri-apps/api/app';
+import { useEffect, useState } from 'react';
+
 import { useT } from '../i18n';
 import { useStore } from '../store';
 
 export function AboutDialog() {
   const t = useT();
+  const [version, setVersion] = useState('');
   const open = useStore((state) => state.aboutOpen);
   const closeAbout = useStore((state) => state.closeAbout);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getVersion()
+      .then((value) => {
+        if (!cancelled) setVersion(value);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!open) return null;
 
@@ -18,7 +34,10 @@ export function AboutDialog() {
         <div className="about-head">
           <span className="brand-mark large">FL</span>
           <div>
-            <h2>{t('about.title')}</h2>
+            <h2>
+              {t('about.title')}
+              {version ? ` ${version}` : ''}
+            </h2>
             <p className="hint">{t('about.subtitle')}</p>
           </div>
         </div>
