@@ -86,7 +86,7 @@ jobs:
             libxdo-dev patchelf build-essential file pkg-config rpm
 
       - run: pnpm --dir ui install --frozen-lockfile
-      - run: ./ui/node_modules/.bin/tauri build --bundles deb,appimage,rpm
+      - run: pnpm --dir ui exec tauri build --bundles deb,appimage,rpm
       - uses: actions/upload-artifact@v4
         with:
           name: fontlord-linux
@@ -108,7 +108,7 @@ jobs:
       - name: Установка зависимостей фронтенда
         run: pnpm --dir ui install --frozen-lockfile
 
-      - run: ./ui/node_modules/.bin/tauri build --bundles app,dmg
+      - run: pnpm --dir ui exec tauri build --bundles app,dmg
       - uses: actions/upload-artifact@v4
         with:
           name: fontlord-macos
@@ -130,7 +130,7 @@ jobs:
       - name: Установка зависимостей фронтенда
         run: pnpm --dir ui install --frozen-lockfile
 
-      - run: ./ui/node_modules/.bin/tauri build --bundles msi,nsis
+      - run: pnpm --dir ui exec tauri build --bundles msi,nsis
       - uses: actions/upload-artifact@v4
         with:
           name: fontlord-windows
