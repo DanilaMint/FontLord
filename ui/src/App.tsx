@@ -109,6 +109,11 @@ export function App() {
       const ctrl = event.ctrlKey || event.metaKey;
 
       if (ctrl) {
+        // В текстовых полях сочетания работы с буфером обмена остаются
+        // системными: выделение текста важнее выделения штрихов.
+        if (typing && ['a', 'c', 'x', 'v'].includes(event.key.toLowerCase())) {
+          return;
+        }
         switch (event.key.toLowerCase()) {
           case 'n':
             event.preventDefault();
