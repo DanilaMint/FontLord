@@ -40,7 +40,8 @@ jobs:
             patchelf \
             build-essential \
             file \
-            pkg-config
+            pkg-config \
+            rpm
 
       - name: Установка pnpm
         uses: pnpm/action-setup@v4
@@ -72,8 +73,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Фиксация версии Tauri
-        run: cargo update -p tauri --precise 2.12.5
       - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
         with:
@@ -84,7 +83,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
-            libxdo-dev patchelf build-essential file pkg-config
+            libxdo-dev patchelf build-essential file pkg-config rpm
 
       - run: pnpm --dir ui install --frozen-lockfile
       - run: ./ui/node_modules/.bin/tauri build --bundles deb,appimage,rpm
@@ -101,8 +100,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Фиксация версии Tauri
-        run: cargo update -p tauri --precise 2.12.5
       - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
         with:
@@ -125,8 +122,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: Фиксация версии Tauri
-        run: cargo update -p tauri --precise 2.12.5
       - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
         with:
