@@ -43,7 +43,9 @@ pub fn decompile_font(data: &[u8]) -> Result<(FontProject, DecompileReport), Fon
         ascender: face.ascender(),
         descender: face.descender(),
         line_gap: face.line_gap(),
-        x_height: face.x_height().unwrap_or((units_per_em as f32 * 0.5) as i16) as u16,
+        x_height: face
+            .x_height()
+            .unwrap_or((units_per_em as f32 * 0.5) as i16) as u16,
         cap_height: (units_per_em as f32 * 0.7) as u16,
         designer: name_of(&face, 9).unwrap_or_default(),
         copyright: name_of(&face, 0).unwrap_or_default(),
@@ -74,9 +76,7 @@ pub fn decompile_font(data: &[u8]) -> Result<(FontProject, DecompileReport), Fon
             continue;
         }
 
-        let advance = face
-            .glyph_hor_advance(glyph_id)
-            .unwrap_or(units_per_em / 2);
+        let advance = face.glyph_hor_advance(glyph_id).unwrap_or(units_per_em / 2);
         let name = face
             .glyph_name(glyph_id)
             .filter(|value| !value.trim().is_empty())
@@ -136,7 +136,8 @@ impl GlyphOutline {
             }
         }
         if self.current.len() >= 2 {
-            self.contours.push(Contour::new(std::mem::take(&mut self.current)));
+            self.contours
+                .push(Contour::new(std::mem::take(&mut self.current)));
         } else {
             self.current.clear();
         }
@@ -174,14 +175,10 @@ impl OutlineSink for GlyphOutline {
         for step in 1..=CUBIC_STEPS {
             let t = step as f32 / CUBIC_STEPS as f32;
             let u = 1.0 - t;
-            let px = u * u * u * start.0
-                + 3.0 * u * u * t * c1x
-                + 3.0 * u * t * t * c2x
-                + t * t * t * x;
-            let py = u * u * u * start.1
-                + 3.0 * u * u * t * c1y
-                + 3.0 * u * t * t * c2y
-                + t * t * t * y;
+            let px =
+                u * u * u * start.0 + 3.0 * u * u * t * c1x + 3.0 * u * t * t * c2x + t * t * t * x;
+            let py =
+                u * u * u * start.1 + 3.0 * u * u * t * c1y + 3.0 * u * t * t * c2y + t * t * t * y;
             self.current.push(ContourPoint::on_curve(px, py));
         }
     }
