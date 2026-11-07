@@ -50,6 +50,12 @@ jobs:
       - name: Установка зависимостей фронтенда
         run: pnpm --dir ui install --frozen-lockfile
 
+      # Сборка фронтенда идёт до проверок кода: макрос tauri::generate_context!
+      # требует существующий каталог ui/dist (frontendDist), иначе компиляция
+      # крейта fontlord падает ещё на этапе clippy или тестов.
+      - name: Сборка фронтенда
+        run: pnpm --dir ui build
+
       - name: Проверка форматирования
         run: cargo fmt --all -- --check
 
@@ -58,9 +64,6 @@ jobs:
 
       - name: Тесты
         run: cargo test --workspace
-
-      - name: Сборка фронтенда
-        run: pnpm --dir ui build
 
   linux:
     name: Linux
