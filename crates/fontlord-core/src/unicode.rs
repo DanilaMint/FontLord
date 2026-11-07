@@ -233,9 +233,17 @@ impl UnicodeIndex {
     }
 
     /// Полная информация о символе.
+    ///
+    /// Символы без имени в Unicode (область частного использования, незанятые
+    /// коды) тоже доступны: для них генерируется техническое имя, чтобы их
+    /// можно было выбирать в редакторе.
     pub fn info(&self, codepoint: u32) -> Option<CodepointInfo> {
         let ch = char::from_u32(codepoint)?;
-        let name = self.name(codepoint)?.to_string();
+        let category = category_of(ch);
+        let name = match self.name(codepoint) {
+            Some(name) => name.to_string(),
+            None => fallback_name(codepoint, category),
+        };
         let block = self.block_of(codepoint);
         Some(CodepointInfo {
             codepoint,
@@ -249,21 +257,30 @@ impl UnicodeIndex {
     }
 
     /// Символы диапазона кодов (с пагинацией).
+    ///
+    /// Возвращаются все пригодные для рисования коды диапазона: символы с
+    /// именем в Unicode, символы области частного использования и незанятые
+    /// коды внутри блока.
     pub fn range(&self, start: u32, end: u32, offset: usize, limit: usize) -> Vec<CodepointInfo> {
         let mut items = Vec::new();
         let mut skipped = 0usize;
-        for (cp, _, _) in &self.entries {
-            if *cp < start {
+        for cp in start..=end.min(0x10_FFFF) {
+            let Some(ch) = char::from_u32(cp) else {
+                continue;
+            };
+            if (0xD800..=0xDFFF).contains(&cp) {
                 continue;
             }
-            if *cp > end {
-                break;
+            let category = category_of(ch);
+            let usable = self.name(cp).is_some() || category == "Co" || category == "Cn";
+            if !usable {
+                continue;
             }
             if skipped < offset {
                 skipped += 1;
                 continue;
             }
-            if let Some(info) = self.info(*cp) {
+            if let Some(info) = self.info(cp) {
                 items.push(info);
             }
             if items.len() >= limit {
@@ -321,6 +338,18 @@ impl UnicodeIndex {
             .collect();
 
         SearchResult { items, total }
+    }
+}
+
+/// Техническое имя для символов, у которых нет имени в Unicode.
+///
+/// Такие символы (область частного использования, незанятые коды) всё равно
+/// должны быть доступны в редакторе, поэтому для них генерируется имя.
+pub fn fallback_name(codepoint: u32, category: &str) -> String {
+    match category {
+        "Co" => format!("PRIVATE USE CHARACTER U+{codepoint:04X}"),
+        "Cn" => format!("UNASSIGNED CODEPOINT U+{codepoint:04X}"),
+        other => format!("CODEPOINT U+{codepoint:04X} ({other})"),
     }
 }
 
@@ -422,5 +451,52 @@ mod tests {
         let items = index().range(0x0041, 0x005A, 0, 100);
         assert_eq!(items.len(), 26);
         assert_eq!(items[0].codepoint, 0x0041);
+    }
+
+    #[test]
+    fn private_use_area_is_available() {
+        // Символы области частного использования не имеют имён в Unicode,
+        // но должны быть доступны для выбора и рисования.
+        let info = index().info(0xE000).expect("U+E000");
+        assert_eq!(info.codepoint, 0xE000);
+        assert_eq!(info.category, "Co");
+        assert!(info.name.contains("U+E000"));
+
+        let items = index().range(0xE000, 0xE00F, 0, 100);
+        assert_eq!(items.len(), 0x10);
+        assert_eq!(items[0].codepoint, 0xE000);
+        assert!(items.iter().any(|item| item.codepoint == 0xE00F));
+    }
+
+    #[test]
+    fn supplementary_private_use_area_is_available() {
+        let items = index().range(0xF0000, 0xF000F, 0, 100);
+        assert_eq!(items.len(), 0x10);
+        assert_eq!(items[0].codepoint, 0xF0000);
+    }
+
+    #[test]
+    fn unassigned_codepoints_are_listed_inside_blocks() {
+        // Незанятые коды внутри блока тоже должны попадать в сетку символов.
+        let items = index().range(0x0378, 0x0380, 0, 100);
+        assert!(!items.is_empty());
+        assert!(items.iter().any(|item| item.codepoint == 0x0378));
+    }
+
+    #[test]
+    fn search_finds_private_use_by_codepoint() {
+        let result = index().search("U+E000", 0, 10);
+        assert_eq!(result.total, 1);
+        assert_eq!(result.items[0].codepoint, 0xE000);
+    }
+
+    #[test]
+    fn range_pagination_is_stable() {
+        let first = index().range(0x0041, 0x005A, 0, 10);
+        let second = index().range(0x0041, 0x005A, 10, 10);
+        assert_eq!(first.len(), 10);
+        assert_eq!(second.len(), 10);
+        assert_eq!(first[0].codepoint, 0x0041);
+        assert_eq!(second[0].codepoint, 0x004B);
     }
 }

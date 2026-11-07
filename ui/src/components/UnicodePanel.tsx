@@ -7,8 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '../store';
 import type { CodepointInfo } from '../types';
 
-export function UnicodePanel() {
-  const blocks = useStore((state) => state.blocks);
+export function UnicodePanel() {  const blocks = useStore((state) => state.blocks);
   const selectedBlock = useStore((state) => state.selectedBlock);
   const gridItems = useStore((state) => state.gridItems);
   const gridExhausted = useStore((state) => state.gridExhausted);
@@ -116,7 +115,7 @@ export function UnicodePanel() {
                 .toUpperCase()
                 .padStart(4, '0')} · ${item.category} · ${item.block}`}
             >
-              <span className="glyph-char">{item.character}</span>
+              <span className="glyph-char">{displayChar(item)}</span>
               <span className="glyph-code">
                 {item.codepoint.toString(16).toUpperCase().padStart(4, '0')}
               </span>
@@ -132,4 +131,16 @@ export function UnicodePanel() {
       )}
     </div>
   );
+}
+
+/**
+ * Символ для ячейки сетки.
+ *
+ * Символы области частного использования и незанятые коды не имеют
+ * начертания, поэтому для них показывается техническая пометка.
+ */
+function displayChar(item: CodepointInfo): string {
+  if (item.category === 'Co') return 'PUA';
+  if (item.category === 'Cn') return '—';
+  return item.character;
 }
