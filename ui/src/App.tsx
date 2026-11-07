@@ -10,6 +10,7 @@ import { FontSettings } from './components/FontSettings';
 import { FontPreview, GlyphInspector } from './components/GlyphInspector';
 import { GlyphCanvas } from './components/GlyphCanvas';
 import { BrushPanel } from './components/Inspector';
+import { LicenseDialog } from './components/LicenseDialog';
 import { MenuBar } from './components/MenuBar';
 import { NewProjectDialog } from './components/NewProjectDialog';
 import { UnicodePanel } from './components/UnicodePanel';
@@ -281,6 +282,7 @@ export function App() {
       <NewProjectDialog />
       <ExportDialog />
       <AboutDialog />
+      <LicenseDialog />
 
       <footer className="statusbar">
         <span>{status}</span>

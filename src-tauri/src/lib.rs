@@ -1,6 +1,7 @@
 //! Точка входа приложения Fontlord.
 
 pub mod commands;
+pub mod license;
 pub mod state;
 
 use state::AppState;
@@ -46,6 +47,7 @@ pub fn run() {
             commands::font_export_dialog,
             commands::set_window_title,
             commands::app_exit,
+            commands::app_license,
         ])
         .run(tauri::generate_context!())
         .expect("не удалось запустить приложение Fontlord");

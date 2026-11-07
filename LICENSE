@@ -1,0 +1,178 @@
+Fontlord Source-Available License (FSAL) 1.0
+===========================================
+
+Copyright (c) 2024-2026 Danila Mint and the Fontlord contributors.
+
+This license covers the Fontlord font editor: its source code, build scripts,
+documentation, artwork and any modified versions of them (the "Program").
+
+It is deliberately not an OSI-approved license: it is a source-available
+license with two extra conditions — you may read, study and change everything,
+but you may not sell the Program itself, and the fonts you create with it are
+yours in the fullest sense.
+
+
+1. Definitions
+--------------
+
+"Program" — the Fontlord source code, binaries, installers and documentation
+published in the Fontlord repository, together with any modified version of
+them.
+
+"You" — the person or legal entity exercising the permissions granted by this
+license.
+
+"Output" — any font file, glyph outline, drawing, project file or other
+content that You create with the Program, including fonts derived from a
+third-party font that was opened (decompiled) with the Program.
+
+
+2. Grant of permissions
+-----------------------
+
+Subject to the conditions of this license, the Licensor grants You a
+perpetual, worldwide, non-exclusive, royalty-free, revocable-free licence to:
+
+  a) use, copy, read, study and modify the Program;
+  b) distribute the Program in source or binary form, including modified
+     versions, provided that this license notice is included in the
+     distribution;
+  c) run, build, install and use the Program and any modified version of it
+     for any purpose, including commercial, educational, research and
+     personal ones.
+
+
+3. Reverse engineering is expressly permitted
+---------------------------------------------
+
+The Licensor expressly permits reverse engineering, decompilation,
+disassembly, deobfuscation, debugging, analysis and study of the Program and
+of any binary build of it.
+
+The Licensor will not bring, support or participate in any claim, complaint,
+lawsuit or other legal action — in any jurisdiction — against You or any
+other person on the ground that such activities constitute infringement of
+intellectual property rights, breach of contract, unfair competition,
+violation of anti-circumvention law, or any other wrong.
+
+This permission covers both the Program as published by the Licensor and any
+modified version of it. It is granted so that anyone may verify, audit,
+repair, port, re-implement or interoperate with the Program without fear of
+legal consequences.
+
+Nothing in this section limits Your obligations under sections 4 and 5.
+
+
+4. You may not sell the Program
+--------------------------------
+
+You may not sell, license for a fee, rent, lease, subscribe for, or otherwise
+receive payment or consideration of any kind in exchange for the Program or
+any modified version of it, whether as source code, as a compiled binary, as
+an installer, as a container image, as a hosted or cloud service, or as part
+of a paid product or subscription.
+
+For the avoidance of doubt, the following are expressly permitted and are not
+considered "selling the Program":
+
+  * giving away the Program or a modified version of it, free of charge;
+  * distributing it free of charge, including in bundled or mirrored form;
+  * accepting voluntary donations or sponsorship for maintaining or
+    distributing the Program, provided the money is not presented as a price
+    for a copy of the Program;
+  * using the Program internally inside a company or organisation that does
+    not sell copies of it.
+
+If You want to sell a product, sell Output (see section 5) — not the
+Program.
+
+
+5. The Output is entirely yours
+-------------------------------
+
+All Output created with the Program is yours. The Licensor claims no
+ownership, no intellectual property rights and no royalties over it.
+
+You may use, modify, translate, subset, embed, publish, distribute,
+commercialise and sell the Output without restriction and without paying
+anything to the Licensor, whether or not the Output was created from scratch
+or by modifying a third-party font.
+
+The Licensor also waives any claim that Output infringes rights owned by the
+Licensor, and grants You a perpetual, worldwide, royalty-free licence to
+exercise any rights the Licensor may have in the Output.
+
+Nothing in this license obliges You to include any credit, and no
+attribution is required for the Output.
+
+
+6. Attribution and names
+------------------------
+
+You may use the name "Fontlord" and the Program's logos only to refer to the
+Program itself. If You distribute a modified version of the Program, You
+should state in the documentation that it is a modified version and is not
+officially endorsed by the Licensor. This clause does not restrict the naming
+of fonts, which are Output under section 5.
+
+
+7. No warranty
+--------------
+
+THE PROGRAM IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. THE LICENSOR IS NOT
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+PROGRAM OR ITS USE.
+
+
+8. Limitation of liability
+--------------------------
+
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF DATA OR PROFITS, WHETHER IN AN ACTION OF
+CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+CONNECTION WITH THE PROGRAM OR ITS USE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGES.
+
+
+9. Termination
+--------------
+
+Your rights under this license terminate automatically if You violate any of
+its terms. If You become aware of such a violation, however, You may cure it
+by ceasing the violation and, if it is curable, restoring the Program to
+compliance. Reinstatement is at the Licensor's discretion.
+
+
+10. Miscellaneous
+-----------------
+
+This license is governed by the laws of the Russian Federation, without regard
+to its conflict-of-law provisions.
+
+If any provision of this license is held unenforceable, the remaining
+provisions remain in full force.
+
+This license may be modified by the Licensor; the version published in the
+repository applies to the Program distributed with it.
+
+This license does not grant any trademark or logo rights beyond those
+described in section 6, and it does not grant any patent rights.
+
+---
+
+Краткое содержание (не заменяет текст выше)
+---------------------------------------------
+
+* Код можно свободно читать, изучать, изменять и распространять.
+* Программу (исходники, бинарники, установщики) продавать нельзя.
+  Распространять бесплатно, принимать донаты и использовать внутри компании —
+  можно.
+* Декомпиляция, дизассемблирование и исследование программы явно разрешены:
+  автор не будет предъявлять по этому поводу никаких претензий.
+* Шрифты и любые другие материалы, созданные программой, — полностью ваши:
+  можно использовать, изменять, встраивать и продавать без ограничений и
+  без отчислений.

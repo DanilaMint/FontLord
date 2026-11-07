@@ -55,6 +55,7 @@ function useMenus(): Menu[] {
   const toggleLeftPanel = useStore((state) => state.toggleLeftPanel);
   const leftPanelVisible = useStore((state) => state.leftPanelVisible);
   const openAbout = useStore((state) => state.openAbout);
+  const openLicense = useStore((state) => state.openLicense);
 
   return [
     {
@@ -157,7 +158,11 @@ function useMenus(): Menu[] {
     },
     {
       label: 'Справка',
-      items: [{ label: 'О программе', shortcut: 'F1', action: openAbout }],
+      items: [
+        { label: 'О программе', shortcut: 'F1', action: openAbout },
+        { separator: true, label: '' },
+        { label: 'Лицензия', action: openLicense },
+      ],
     },
   ];
 }

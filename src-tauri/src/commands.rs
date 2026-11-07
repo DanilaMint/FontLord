@@ -474,6 +474,12 @@ pub fn app_exit(app: tauri::AppHandle) {
     app.exit(0);
 }
 
+/// Возвращает текст лицензии Fontlord.
+#[tauri::command]
+pub fn app_license() -> String {
+    crate::license::LICENSE_TEXT.to_string()
+}
+
 /// Имя глифа по умолчанию для кода символа.
 fn glyph_name(codepoint: u32) -> String {
     unicode::postscript_name(codepoint)

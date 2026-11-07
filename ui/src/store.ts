@@ -62,6 +62,7 @@ interface AppState {
   error: string | null;
   newProjectOpen: boolean;
   aboutOpen: boolean;
+  licenseOpen: boolean;
   exportOpen: boolean;
   leftPanelVisible: boolean;
 
@@ -91,6 +92,8 @@ interface AppState {
   closeNewProject: () => void;
   openAbout: () => void;
   closeAbout: () => void;
+  openLicense: () => void;
+  closeLicense: () => void;
   openExport: () => void;
   closeExport: () => void;
   toggleLeftPanel: () => void;
@@ -127,6 +130,7 @@ export const useStore = create<AppState>((set, get) => ({
   error: null,
   newProjectOpen: false,
   aboutOpen: false,
+  licenseOpen: false,
   exportOpen: false,
   leftPanelVisible: true,
 
@@ -294,6 +298,14 @@ export const useStore = create<AppState>((set, get) => ({
 
   closeAbout() {
     set({ aboutOpen: false });
+  },
+
+  openLicense() {
+    set({ licenseOpen: true });
+  },
+
+  closeLicense() {
+    set({ licenseOpen: false });
   },
 
   toggleLeftPanel() {

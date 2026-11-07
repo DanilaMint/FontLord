@@ -160,3 +160,8 @@ export function setWindowTitle(title: string): Promise<void> {
 export function appExit(): Promise<void> {
   return invoke<void>('app_exit');
 }
+
+/** Текст лицензии Fontlord. */
+export function appLicense(): Promise<string> {
+  return invoke<string>('app_license');
+}
