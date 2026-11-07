@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { canvasToFont, contourToPath, fontToCanvas, type Viewport } from '../canvas';
 import { useT } from '../i18n';
 import { useStore } from '../store';
+import { CANVAS_PALETTES, type CanvasPalette } from '../theme';
 import type { BrushKind, StrokePoint } from '../types';
 
 /** Нажам мыши: у мыши нет датчика давления, поэтому используем фиксированное значение. */
@@ -30,6 +31,7 @@ export function GlyphCanvas({ active }: Props) {
   const brushKind = useStore((state) => state.brushKind);
   const brushSettings = useStore((state) => state.brushSettings);
   const nextStrokeId = useStore((state) => state.nextStrokeId);
+  const theme = useStore((state) => state.theme);
   const zoom = useStore((state) => state.zoom);
   const zoomIn = useStore((state) => state.zoomIn);
   const zoomOut = useStore((state) => state.zoomOut);
@@ -37,6 +39,7 @@ export function GlyphCanvas({ active }: Props) {
   const applyStroke = useStore((state) => state.applyStroke);
   const eraseAt = useStore((state) => state.eraseAt);
 
+  const palette = CANVAS_PALETTES[theme];
   const unitsPerEm = meta?.unitsPerEm ?? 1000;
   const ascender = meta?.ascender ?? 800;
   const descender = meta?.descender ?? -200;
@@ -72,23 +75,23 @@ export function GlyphCanvas({ active }: Props) {
     viewportRef.current = viewport;
 
     // Фон.
-    context.fillStyle = '#0f1219';
+    context.fillStyle = palette.background;
     context.fillRect(0, 0, width, height);
 
     // Квадрат em.
     const emTop = fontToCanvas(0, ascender, viewport).y;
     const emHeight = (ascender - descender) * pixelsPerUnit;
-    context.strokeStyle = '#252b38';
+    context.strokeStyle = palette.emSquare;
     context.lineWidth = 1;
     context.strokeRect(originX, emTop, unitsPerEm * pixelsPerUnit, emHeight);
 
     // Направляющие.
     const guides: { y: number; color: string; label: string }[] = [
-      { y: ascender, color: '#3b4a63', label: 'ascender' },
-      { y: capHeight, color: '#33405a', label: 'cap' },
-      { y: xHeight, color: '#33405a', label: 'x-height' },
-      { y: 0, color: '#5b7fb0', label: 'baseline' },
-      { y: descender, color: '#3b4a63', label: 'descender' },
+      { y: ascender, color: palette.guide, label: 'ascender' },
+      { y: capHeight, color: palette.guide, label: 'cap' },
+      { y: xHeight, color: palette.guide, label: 'x-height' },
+      { y: 0, color: palette.baseline, label: 'baseline' },
+      { y: descender, color: palette.guide, label: 'descender' },
     ];
     context.font = '10px "JetBrains Mono", monospace';
     for (const guide of guides) {
@@ -103,7 +106,7 @@ export function GlyphCanvas({ active }: Props) {
     }
 
     // Сетка внутри em.
-    context.strokeStyle = 'rgba(120, 140, 180, 0.08)';
+    context.strokeStyle = palette.grid;
     for (let x = 0; x <= unitsPerEm; x += 100) {
       const px = Math.round(fontToCanvas(x, 0, viewport).x) + 0.5;
       context.beginPath();
@@ -115,9 +118,9 @@ export function GlyphCanvas({ active }: Props) {
     // Ширина продвижения.
     const advance = glyph?.advanceWidth ?? unitsPerEm / 2;
     const advanceWidth = advance * pixelsPerUnit;
-    context.fillStyle = 'rgba(120, 190, 255, 0.06)';
+    context.fillStyle = palette.advanceFill;
     context.fillRect(originX, emTop, advanceWidth, emHeight);
-    context.strokeStyle = 'rgba(120, 190, 255, 0.25)';
+    context.strokeStyle = palette.advanceStroke;
     context.setLineDash([4, 4]);
     context.strokeRect(originX, emTop, advanceWidth, emHeight);
     context.setLineDash([]);
@@ -128,8 +131,8 @@ export function GlyphCanvas({ active }: Props) {
       context.save();
       context.translate(viewport.originX, viewport.originY);
       context.scale(pixelsPerUnit, -pixelsPerUnit);
-      context.fillStyle = '#e9eef7';
-      context.strokeStyle = '#78beff';
+      context.fillStyle = palette.glyphFill;
+      context.strokeStyle = palette.glyphStroke;
       context.lineWidth = 1.2 / pixelsPerUnit;
       for (const contour of glyph.contours) {
         const path = contourToPath(contour);
@@ -141,7 +144,7 @@ export function GlyphCanvas({ active }: Props) {
 
     // Текущий штрих (предпросмотр во время рисования).
     if (livePoints.length > 1) {
-      drawStrokePreview(context, viewport, livePoints, brushKind, brushSettings.width);
+      drawStrokePreview(context, viewport, livePoints, brushKind, brushSettings.width, palette);
     }
   }, [
     ascender,
@@ -151,6 +154,7 @@ export function GlyphCanvas({ active }: Props) {
     descender,
     glyph,
     livePoints,
+    palette,
     unitsPerEm,
     xHeight,
     zoom,
@@ -315,13 +319,14 @@ function drawStrokePreview(
   points: StrokePoint[],
   kind: BrushKind,
   width: number,
+  palette: CanvasPalette,
 ) {
   context.save();
   context.translate(viewport.originX, viewport.originY);
   context.scale(viewport.pixelsPerUnit, -viewport.pixelsPerUnit);
 
-  context.strokeStyle = 'rgba(233, 238, 247, 0.85)';
-  context.fillStyle = 'rgba(233, 238, 247, 0.85)';
+  context.strokeStyle = palette.preview;
+  context.fillStyle = palette.preview;
   context.lineCap = 'round';
   context.lineJoin = 'round';
 

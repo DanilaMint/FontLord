@@ -18,6 +18,36 @@
   --radius: 8px;
   --mono: 'JetBrains Mono', 'SF Mono', 'Cascadia Code', ui-monospace, monospace;
   --sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --hover: #1c2231;
+  --overlay: rgba(13, 17, 25, 0.85);
+  --backdrop: rgba(6, 9, 14, 0.72);
+  --kbd-bg: rgba(255, 255, 255, 0.04);
+  --scrollbar: #2e374a;
+  --canvas-bg: #0f1219;
+}
+
+/* Светлая тема. */
+:root[data-theme='light'] {
+  --bg: #eef1f6;
+  --bg-panel: #ffffff;
+  --bg-panel-alt: #f6f8fc;
+  --bg-input: #ffffff;
+  --border: #d9dfea;
+  --border-strong: #c0c9d8;
+  --text: #1b2330;
+  --text-dim: #566174;
+  --text-faint: #8a94a6;
+  --accent: #1a7fd4;
+  --accent-strong: #1668b0;
+  --accent-soft: rgba(26, 127, 212, 0.12);
+  --danger: #c0392b;
+  --ok: #1e9e5a;
+  --hover: #e9eef6;
+  --overlay: rgba(255, 255, 255, 0.9);
+  --backdrop: rgba(35, 45, 60, 0.45);
+  --kbd-bg: rgba(0, 0, 0, 0.04);
+  --scrollbar: #c8d1de;
+  --canvas-bg: #f6f8fc;
 }
 
 * {
@@ -53,7 +83,7 @@ button {
 }
 
 button:hover:not(:disabled) {
-  background: #1c2231;
+  background: var(--hover);
   border-color: var(--border-strong);
 }
 
@@ -80,6 +110,7 @@ button.danger {
 }
 
 input,
+select,
 textarea {
   font-family: inherit;
   font-size: 12px;
@@ -93,6 +124,7 @@ textarea {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border-color: var(--accent-strong);
 }
@@ -332,7 +364,7 @@ textarea:focus {
 }
 
 .block-item:hover {
-  background: #171d29;
+  background: var(--hover);
 }
 
 .block-item.selected {
@@ -408,7 +440,7 @@ textarea:focus {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  background: #0f1219;
+  background: var(--canvas-bg, #0f1219);
 }
 
 .glyph-canvas {
@@ -432,7 +464,7 @@ textarea:focus {
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  background: rgba(13, 17, 25, 0.85);
+  background: var(--overlay);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   font-family: var(--mono);
@@ -701,7 +733,7 @@ input[type='range']::-moz-range-thumb {
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(6, 9, 14, 0.72);
+  background: var(--backdrop);
   z-index: 50;
 }
 
@@ -850,7 +882,7 @@ input[type='range']::-moz-range-thumb {
   font-family: var(--mono);
   font-size: 10px;
   color: var(--text-faint);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--kbd-bg);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 1px 5px;

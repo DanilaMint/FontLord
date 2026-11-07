@@ -60,6 +60,7 @@ function useMenus(): Menu[] {
   const openAbout = useStore((state) => state.openAbout);
   const openLicense = useStore((state) => state.openLicense);
   const openLanguageDialog = useStore((state) => state.openLanguageDialog);
+  const openThemeDialog = useStore((state) => state.openThemeDialog);
 
   return [
     {
@@ -169,6 +170,7 @@ function useMenus(): Menu[] {
       label: t('menu.settings'),
       items: [
         { label: t('menu.settings.language'), action: openLanguageDialog },
+        { label: t('menu.settings.theme'), action: openThemeDialog },
       ],
     },
     {

@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 
 import { loadLanguage, saveLanguage, translate, type Language } from './dict';
+import { loadTheme, saveTheme, type Theme } from './theme';
 import * as ipc from './ipc';
 import type {
   BlockInfo,
@@ -62,10 +63,12 @@ interface AppState {
   status: string;
   error: string | null;
   language: Language;
+  theme: Theme;
   newProjectOpen: boolean;
   aboutOpen: boolean;
   licenseOpen: boolean;
   languageDialogOpen: boolean;
+  themeDialogOpen: boolean;
   exportOpen: boolean;
   leftPanelVisible: boolean;
 
@@ -99,6 +102,8 @@ interface AppState {
   closeLicense: () => void;
   openLanguageDialog: () => void;
   closeLanguageDialog: () => void;
+  openThemeDialog: () => void;
+  closeThemeDialog: () => void;
   openExport: () => void;
   closeExport: () => void;
   toggleLeftPanel: () => void;
@@ -112,6 +117,7 @@ interface AppState {
   setStatus: (status: string) => void;
   setError: (error: string | null) => void;
   setLanguage: (language: Language) => void;
+  setTheme: (theme: Theme) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -136,10 +142,12 @@ export const useStore = create<AppState>((set, get) => ({
   status: translate(loadLanguage(), 'status.ready'),
   error: null,
   language: loadLanguage(),
+  theme: loadTheme(),
   newProjectOpen: false,
   aboutOpen: false,
   licenseOpen: false,
   languageDialogOpen: false,
+  themeDialogOpen: false,
   exportOpen: false,
   leftPanelVisible: true,
 
@@ -328,6 +336,14 @@ export const useStore = create<AppState>((set, get) => ({
     set({ languageDialogOpen: false });
   },
 
+  openThemeDialog() {
+    set({ themeDialogOpen: true });
+  },
+
+  closeThemeDialog() {
+    set({ themeDialogOpen: false });
+  },
+
   toggleLeftPanel() {
     set((state) => ({ leftPanelVisible: !state.leftPanelVisible }));
   },
@@ -448,5 +464,11 @@ export const useStore = create<AppState>((set, get) => ({
     set({ language });
     saveLanguage(language);
     document.documentElement.lang = language;
+  },
+
+  setTheme(theme) {
+    set({ theme });
+    saveTheme(theme);
+    document.documentElement.dataset.theme = theme;
   },
 }));

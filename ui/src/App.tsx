@@ -12,7 +12,7 @@ import { GlyphCanvas } from './components/GlyphCanvas';
 import { BrushPanel } from './components/Inspector';
 import { LicenseDialog } from './components/LicenseDialog';
 import { MenuBar } from './components/MenuBar';
-import { LanguageDialog } from './components/SettingsDialog';
+import { LanguageDialog, ThemeDialog } from './components/SettingsDialog';
 import { NewProjectDialog } from './components/NewProjectDialog';
 import { UnicodePanel } from './components/UnicodePanel';
 import * as ipc from './ipc';
@@ -39,6 +39,8 @@ export function App() {
   const currentCodepoint = useStore((state) => state.currentCodepoint);
   const glyph = useStore((state) => state.glyph);
   const leftPanelVisible = useStore((state) => state.leftPanelVisible);
+  const theme = useStore((state) => state.theme);
+  const language = useStore((state) => state.language);
 
   const undo = useStore((state) => state.undo);
   const redo = useStore((state) => state.redo);
@@ -58,6 +60,15 @@ export function App() {
   useEffect(() => {
     void init();
   }, [init]);
+
+  // Тема и язык применяются к документу сразу при запуске.
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   useEffect(() => {
     if (!error) return;
@@ -287,6 +298,7 @@ export function App() {
       <AboutDialog />
       <LicenseDialog />
       <LanguageDialog />
+      <ThemeDialog />
 
       <footer className="statusbar">
         <span>{status}</span>
