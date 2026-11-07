@@ -51,6 +51,10 @@ export function AboutDialog() {
               <td>Del / Esc</td>
               <td>{t('about.hotkey.glyph')}</td>
             </tr>
+            <tr>
+              <td>V</td>
+              <td>{t('about.hotkey.cursor')}</td>
+            </tr>
           </tbody>
         </table>
 

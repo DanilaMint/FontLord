@@ -59,6 +59,11 @@ interface AppState {
   presets: BrushPreset[];
   nextStrokeId: number;
 
+  /* Режим курсора и выделение */
+  cursorMode: boolean;
+  selectedStrokeIds: number[];
+  clipboard: Stroke[];
+
   /* Служебное */
   status: string;
   error: string | null;
@@ -114,6 +119,16 @@ interface AppState {
   openProject: () => Promise<void>;
   exportFont: (format: FontFormat) => Promise<void>;
   decompileFont: () => Promise<void>;
+  toggleCursorMode: () => void;
+  setSelection: (ids: number[]) => void;
+  selectAllStrokes: () => void;
+  toggleStrokeSelection: (id: number) => void;
+  clearSelection: () => void;
+  deleteSelectedStrokes: () => Promise<void>;
+  copySelection: () => void;
+  cutSelection: () => Promise<void>;
+  pasteClipboard: () => Promise<void>;
+  moveSelectedStrokes: (dx: number, dy: number) => Promise<void>;
   setStatus: (status: string) => void;
   setError: (error: string | null) => void;
   setLanguage: (language: Language) => void;
@@ -138,6 +153,10 @@ export const useStore = create<AppState>((set, get) => ({
   brushSettings: { ...DEFAULT_BRUSH },
   presets: [],
   nextStrokeId: 1,
+
+  cursorMode: false,
+  selectedStrokeIds: [],
+  clipboard: [],
 
   status: translate(loadLanguage(), 'status.ready'),
   error: null,
@@ -221,11 +240,11 @@ export const useStore = create<AppState>((set, get) => ({
 
   async openGlyph(codepoint) {
     const glyph = await ipc.glyphGet(codepoint);
-    set({ currentCodepoint: codepoint, glyph });
+    set({ currentCodepoint: codepoint, glyph, selectedStrokeIds: [] });
   },
 
   closeGlyph() {
-    set({ currentCodepoint: null, glyph: null });
+    set({ currentCodepoint: null, glyph: null, selectedStrokeIds: [] });
   },
 
   setBrushKind(kind) {
@@ -302,6 +321,109 @@ export const useStore = create<AppState>((set, get) => ({
       set({ glyph: await ipc.glyphGet(codepoint) });
     }
     set({ status: translate(get().language, 'status.redo') });
+  },
+
+  toggleCursorMode() {
+    set((state) => ({ cursorMode: !state.cursorMode, selectedStrokeIds: [] }));
+  },
+
+  setSelection(ids) {
+    set({ selectedStrokeIds: ids });
+  },
+
+  selectAllStrokes() {
+    const glyph = get().glyph;
+    if (!glyph) return;
+    set({ selectedStrokeIds: glyph.strokes.map((stroke) => stroke.id) });
+  },
+
+  toggleStrokeSelection(id) {
+    set((state) => ({
+      selectedStrokeIds: state.selectedStrokeIds.includes(id)
+        ? state.selectedStrokeIds.filter((value) => value !== id)
+        : [...state.selectedStrokeIds, id],
+    }));
+  },
+
+  clearSelection() {
+    set({ selectedStrokeIds: [] });
+  },
+
+  async deleteSelectedStrokes() {
+    const codepoint = get().currentCodepoint;
+    const ids = get().selectedStrokeIds;
+    if (codepoint === null || ids.length === 0) return;
+    let glyph = get().glyph;
+    for (const id of ids) {
+      glyph = await ipc.glyphRemoveStroke(codepoint, id);
+    }
+    set({ glyph, selectedStrokeIds: [] });
+    await get().refreshProject();
+  },
+
+  copySelection() {
+    const glyph = get().glyph;
+    const ids = get().selectedStrokeIds;
+    if (!glyph || ids.length === 0) return;
+    const strokes = glyph.strokes
+      .filter((stroke) => ids.includes(stroke.id))
+      .map((stroke) => ({
+        ...stroke,
+        points: stroke.points.map((point) => ({ ...point })),
+      }));
+    set({ clipboard: strokes });
+  },
+
+  async cutSelection() {
+    get().copySelection();
+    await get().deleteSelectedStrokes();
+  },
+
+  async pasteClipboard() {
+    const codepoint = get().currentCodepoint;
+    const clipboard = get().clipboard;
+    if (codepoint === null || clipboard.length === 0) return;
+    let nextId = get().nextStrokeId;
+    const pasted: number[] = [];
+    for (const stroke of clipboard) {
+      const copy: Stroke = {
+        ...stroke,
+        id: nextId,
+        points: stroke.points.map((point) => ({
+          x: point.x + 20,
+          y: point.y + 20,
+          pressure: point.pressure,
+        })),
+      };
+      nextId += 1;
+      const glyph = await ipc.glyphUpsertStroke(codepoint, copy);
+      set({ glyph, nextStrokeId: nextId });
+      pasted.push(copy.id);
+    }
+    set({ selectedStrokeIds: pasted });
+    await get().refreshProject();
+  },
+
+  async moveSelectedStrokes(dx, dy) {
+    const codepoint = get().currentCodepoint;
+    const ids = get().selectedStrokeIds;
+    const glyph = get().glyph;
+    if (codepoint === null || !glyph || ids.length === 0) return;
+    let updated = glyph;
+    for (const stroke of glyph.strokes) {
+      if (!ids.includes(stroke.id)) continue;
+      const moved: Stroke = {
+        ...stroke,
+        points: stroke.points.map((point) => ({
+          x: point.x + dx,
+          y: point.y + dy,
+          pressure: point.pressure,
+        })),
+      };
+      updated = await ipc.glyphUpsertStroke(codepoint, moved);
+    }
+    set({ glyph: updated });
+    await get().refreshProject();
   },
 
   openNewProject() {

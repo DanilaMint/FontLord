@@ -16,6 +16,7 @@ export function GlyphInspector() {
   const updateMetrics = useStore((state) => state.updateMetrics);
   const removeStroke = useStore((state) => state.removeStroke);
   const deleteGlyph = useStore((state) => state.deleteGlyph);
+  const selectedStrokeIds = useStore((state) => state.selectedStrokeIds);
 
   const [advance, setAdvance] = useState(0);
   const [name, setName] = useState('');
@@ -103,7 +104,10 @@ export function GlyphInspector() {
 
           <ul className="stroke-list">
             {glyph.strokes.map((stroke) => (
-              <li key={stroke.id}>
+              <li
+                key={stroke.id}
+                className={selectedStrokeIds.includes(stroke.id) ? 'selected' : ''}
+              >
                 <span className={`stroke-kind kind-${stroke.kind}`} />
                 <span className="stroke-info">
                   {t('glyph.strokeInfo', {

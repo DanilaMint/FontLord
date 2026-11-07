@@ -46,6 +46,12 @@ const DICTIONARIES: Record<Language, Record<string, string>> = {
     'menu.edit.redo': 'Повторить',
     'menu.edit.deleteGlyph': 'Удалить глиф',
     'menu.edit.closeGlyph': 'Закрыть глиф',
+    'menu.edit.cursorMode': 'Режим курсора',
+    'menu.edit.selectAll': 'Выделить все штрихи',
+    'menu.edit.deleteSelected': 'Удалить выделенные штрихи',
+    'menu.edit.copy': 'Копировать штрихи',
+    'menu.edit.cut': 'Вырезать штрихи',
+    'menu.edit.paste': 'Вставить штрихи',
     'menu.view.zoomIn': 'Увеличить',
     'menu.view.zoomOut': 'Уменьшить',
     'menu.view.zoomReset': 'Сбросить масштаб',
@@ -131,6 +137,8 @@ const DICTIONARIES: Record<Language, Record<string, string>> = {
 
     /* --- Холст --- */
     'canvas.ring': 'Кольцо',
+    'canvas.cursor': 'Курсор',
+    'canvas.cursorHint': 'Режим курсора: выделение, перемещение и редактирование штрихов',
     'canvas.shiftHint': 'Shift — прямая',
     'canvas.zoomReset': '100%',
 
@@ -209,6 +217,12 @@ const DICTIONARIES: Record<Language, Record<string, string>> = {
     'menu.edit.redo': 'Redo',
     'menu.edit.deleteGlyph': 'Delete glyph',
     'menu.edit.closeGlyph': 'Close glyph',
+    'menu.edit.cursorMode': 'Cursor mode',
+    'menu.edit.selectAll': 'Select all strokes',
+    'menu.edit.deleteSelected': 'Delete selected strokes',
+    'menu.edit.copy': 'Copy strokes',
+    'menu.edit.cut': 'Cut strokes',
+    'menu.edit.paste': 'Paste strokes',
     'menu.view.zoomIn': 'Zoom in',
     'menu.view.zoomOut': 'Zoom out',
     'menu.view.zoomReset': 'Reset zoom',
@@ -294,6 +308,8 @@ const DICTIONARIES: Record<Language, Record<string, string>> = {
 
     /* --- Canvas --- */
     'canvas.ring': 'Ring',
+    'canvas.cursor': 'Cursor',
+    'canvas.cursorHint': 'Cursor mode: select, move and edit strokes',
     'canvas.shiftHint': 'Shift — straight line',
     'canvas.zoomReset': '100%',
 

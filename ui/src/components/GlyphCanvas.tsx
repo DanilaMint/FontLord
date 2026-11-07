@@ -1,5 +1,9 @@
 /**
  * Холст редактора глифа: сетка, направляющие, контуры и рисование кистью.
+ *
+ * В режиме курсора холст работает как редактор выделения: можно обвести
+ * область, выбрать штрихи, перетащить их, а также удалить, скопировать,
+ * вырезать и вставить.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -8,14 +12,25 @@ import { canvasToFont, contourToPath, fontToCanvas, type Viewport } from '../can
 import { useT } from '../i18n';
 import { useStore } from '../store';
 import { CANVAS_PALETTES, type CanvasPalette } from '../theme';
-import type { BrushKind, StrokePoint } from '../types';
+import type { BrushKind, Stroke, StrokePoint } from '../types';
 
 /** Нажам мыши: у мыши нет датчика давления, поэтому используем фиксированное значение. */
 const MOUSE_PRESSURE = 0.75;
 
+/** Радиус попадания по штриху (в шрифтовых единицах). */
+const HIT_RADIUS = 14;
+
 interface Props {
   /** Признак активности холста (внутри редактора). */
   active: boolean;
+}
+
+/** Прямоугольник выделения в шрифтовых единицах. */
+interface Rect {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
 }
 
 export function GlyphCanvas({ active }: Props) {
@@ -25,6 +40,10 @@ export function GlyphCanvas({ active }: Props) {
   const [drawing, setDrawing] = useState(false);
   const [livePoints, setLivePoints] = useState<StrokePoint[]>([]);
   const [closedMode, setClosedMode] = useState(false);
+  /** Прямоугольник выделения (режим курсора). */
+  const [band, setBand] = useState<Rect | null>(null);
+  /** Смещение перетаскиваемых штрихов (режим курсора). */
+  const [dragDelta, setDragDelta] = useState<{ x: number; y: number } | null>(null);
 
   const glyph = useStore((state) => state.glyph);
   const meta = useStore((state) => state.meta);
@@ -38,6 +57,12 @@ export function GlyphCanvas({ active }: Props) {
   const zoomReset = useStore((state) => state.zoomReset);
   const applyStroke = useStore((state) => state.applyStroke);
   const eraseAt = useStore((state) => state.eraseAt);
+  const cursorMode = useStore((state) => state.cursorMode);
+  const selectedStrokeIds = useStore((state) => state.selectedStrokeIds);
+  const setSelection = useStore((state) => state.setSelection);
+  const toggleStrokeSelection = useStore((state) => state.toggleStrokeSelection);
+  const clearSelection = useStore((state) => state.clearSelection);
+  const moveSelectedStrokes = useStore((state) => state.moveSelectedStrokes);
 
   const palette = CANVAS_PALETTES[theme];
   const unitsPerEm = meta?.unitsPerEm ?? 1000;
@@ -142,6 +167,38 @@ export function GlyphCanvas({ active }: Props) {
       context.restore();
     }
 
+    // Выделенные штрихи (и их перетаскивание).
+    if (glyph && selectedStrokeIds.length > 0) {
+      context.save();
+      context.translate(viewport.originX, viewport.originY);
+      context.scale(pixelsPerUnit, -pixelsPerUnit);
+      context.strokeStyle = palette.selection;
+      context.fillStyle = palette.selection;
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      context.globalAlpha = 0.85;
+      for (const stroke of glyph.strokes) {
+        if (!selectedStrokeIds.includes(stroke.id)) continue;
+        drawStrokeHighlight(context, stroke, dragDelta);
+      }
+      context.restore();
+    }
+
+    // Прямоугольник выделения.
+    if (band) {
+      const left = fontToCanvas(band.x0, band.y1, viewport).x;
+      const right = fontToCanvas(band.x1, band.y0, viewport).x;
+      const top = fontToCanvas(0, band.y1, viewport).y;
+      const bottom = fontToCanvas(0, band.y0, viewport).y;
+      context.fillStyle = 'rgba(120, 190, 255, 0.12)';
+      context.fillRect(left, top, right - left, bottom - top);
+      context.strokeStyle = palette.selection;
+      context.setLineDash([5, 4]);
+      context.lineWidth = 1;
+      context.strokeRect(left, top, right - left, bottom - top);
+      context.setLineDash([]);
+    }
+
     // Текущий штрих (предпросмотр во время рисования).
     if (livePoints.length > 1) {
       drawStrokePreview(context, viewport, livePoints, brushKind, brushSettings.width, palette);
@@ -152,9 +209,11 @@ export function GlyphCanvas({ active }: Props) {
     brushSettings.width,
     capHeight,
     descender,
+    dragDelta,
     glyph,
     livePoints,
     palette,
+    selectedStrokeIds,
     unitsPerEm,
     xHeight,
     zoom,
@@ -165,6 +224,12 @@ export function GlyphCanvas({ active }: Props) {
   const pointsRef = useRef<StrokePoint[]>([]);
   /** Начало текущего штриха — от него считается выравнивание по Shift. */
   const strokeAnchorRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  /** Текущее взаимодействие в режиме курсора. */
+  const interactionRef = useRef<
+    { kind: 'band' | 'drag'; start: { x: number; y: number } } | null
+  >(null);
+  /** Прямоугольник выделения (актуальное значение). */
+  const bandRef = useRef<Rect | null>(null);
 
   useEffect(() => {
     redraw();
@@ -184,11 +249,66 @@ export function GlyphCanvas({ active }: Props) {
     return canvasToFont(event.clientX - rect.left, event.clientY - rect.top, viewportRef.current);
   };
 
+  /** Ищет штрих под указателем. */
+  const hitStroke = (point: { x: number; y: number }): number | null => {
+    if (!glyph) return null;
+    let best: number | null = null;
+    let bestDistance = HIT_RADIUS;
+    for (const stroke of glyph.strokes) {
+      for (const node of stroke.points) {
+        const distance = Math.hypot(node.x - point.x, node.y - point.y);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          best = stroke.id;
+        }
+      }
+    }
+    return best;
+  };
+
+  /** Штрихи, попавшие в прямоугольник выделения. */
+  const strokesInRect = (rect: Rect): number[] => {
+    if (!glyph) return [];
+    const x0 = Math.min(rect.x0, rect.x1);
+    const x1 = Math.max(rect.x0, rect.x1);
+    const y0 = Math.min(rect.y0, rect.y1);
+    const y1 = Math.max(rect.y0, rect.y1);
+    const ids: number[] = [];
+    for (const stroke of glyph.strokes) {
+      const inside = stroke.points.some(
+        (node) => node.x >= x0 && node.x <= x1 && node.y >= y0 && node.y <= y1,
+      );
+      if (inside) ids.push(stroke.id);
+    }
+    return ids;
+  };
+
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     // Глифа может ещё не существовать в проекте: первый штрих его создаст.
     if (!active) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     const point = toFont(event);
+
+    // Режим курсора: выделение и перетаскивание штрихов.
+    if (cursorMode) {
+      const hit = hitStroke(point);
+      if (hit !== null) {
+        if (event.shiftKey) {
+          toggleStrokeSelection(hit);
+        } else if (!selectedStrokeIds.includes(hit)) {
+          setSelection([hit]);
+        }
+        interactionRef.current = { kind: 'drag', start: point };
+        setDragDelta({ x: 0, y: 0 });
+        return;
+      }
+      if (!event.shiftKey) clearSelection();
+      interactionRef.current = { kind: 'band', start: point };
+      bandRef.current = { x0: point.x, y0: point.y, x1: point.x, y1: point.y };
+      setBand(bandRef.current);
+      return;
+    }
+
     const pressure = pressureOf(event);
     strokeAnchorRef.current = point;
     pointsRef.current = [{ x: point.x, y: point.y, pressure }];
@@ -197,6 +317,20 @@ export function GlyphCanvas({ active }: Props) {
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (cursorMode) {
+      const interaction = interactionRef.current;
+      if (!interaction) return;
+      const point = toFont(event);
+      const start = interaction.start;
+      if (interaction.kind === 'band') {
+        bandRef.current = { x0: start.x, y0: start.y, x1: point.x, y1: point.y };
+        setBand(bandRef.current);
+      } else if (selectedStrokeIds.length > 0) {
+        setDragDelta({ x: point.x - start.x, y: point.y - start.y });
+      }
+      return;
+    }
+
     if (!drawing) return;
     let point = toFont(event);
     // Удержание Shift выравнивает штрих по прямой: направление округляется до
@@ -213,6 +347,21 @@ export function GlyphCanvas({ active }: Props) {
   };
 
   const handlePointerUp = async () => {
+    if (cursorMode) {
+      const interaction = interactionRef.current;
+      interactionRef.current = null;
+      if (interaction?.kind === 'band') {
+        const rect = bandRef.current;
+        setSelection(rect ? strokesInRect(rect) : []);
+        bandRef.current = null;
+        setBand(null);
+      } else if (dragDelta && (dragDelta.x !== 0 || dragDelta.y !== 0)) {
+        await moveSelectedStrokes(dragDelta.x, dragDelta.y);
+      }
+      setDragDelta(null);
+      return;
+    }
+
     if (!drawing) return;
     setDrawing(false);
     const points = pointsRef.current;
@@ -244,11 +393,13 @@ export function GlyphCanvas({ active }: Props) {
     else zoomOut();
   };
 
+  const toggleCursorMode = useStore((state) => state.toggleCursorMode);
+
   return (
     <div className="canvas-wrap" ref={containerRef}>
       <canvas
         ref={canvasRef}
-        className={`glyph-canvas${active ? ' active' : ''}`}
+        className={`glyph-canvas${active ? ' active' : ''}${cursorMode ? ' cursor-mode' : ''}`}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -271,8 +422,17 @@ export function GlyphCanvas({ active }: Props) {
           className={closedMode ? 'toggle on' : 'toggle'}
           onClick={() => setClosedMode((value) => !value)}
           title="Замкнуть контур (кольцо)"
+          disabled={cursorMode}
         >
           {t('canvas.ring')}
+        </button>
+        <button
+          type="button"
+          className={cursorMode ? 'toggle on' : 'toggle'}
+          onClick={toggleCursorMode}
+          title={t('canvas.cursorHint')}
+        >
+          {t('canvas.cursor')}
         </button>
         <span className="canvas-hint" title={t('canvas.shiftHint')}>
           {t('canvas.shiftHint')}
@@ -310,6 +470,25 @@ function constrainToStraight(
     x: anchor.x + Math.cos(snapped) * length,
     y: anchor.y + Math.sin(snapped) * length,
   };
+}
+
+/** Подсвечивает выбранный штрих (с учётом перетаскивания). */
+function drawStrokeHighlight(
+  context: CanvasRenderingContext2D,
+  stroke: Stroke,
+  delta: { x: number; y: number } | null,
+) {
+  if (stroke.points.length === 0) return;
+  context.lineWidth = stroke.settings.width;
+  context.beginPath();
+  stroke.points.forEach((point, index) => {
+    const x = point.x + (delta?.x ?? 0);
+    const y = point.y + (delta?.y ?? 0);
+    if (index === 0) context.moveTo(x, y);
+    else context.lineTo(x, y);
+  });
+  if (stroke.closed) context.closePath();
+  context.stroke();
 }
 
 /** Предпросмотр штриха во время рисования. */

@@ -56,6 +56,15 @@ export function App() {
   const zoomReset = useStore((state) => state.zoomReset);
   const setBrushKind = useStore((state) => state.setBrushKind);
   const deleteGlyph = useStore((state) => state.deleteGlyph);
+  const cursorMode = useStore((state) => state.cursorMode);
+  const toggleCursorMode = useStore((state) => state.toggleCursorMode);
+  const selectedStrokeIds = useStore((state) => state.selectedStrokeIds);
+  const clearSelection = useStore((state) => state.clearSelection);
+  const deleteSelectedStrokes = useStore((state) => state.deleteSelectedStrokes);
+  const copySelection = useStore((state) => state.copySelection);
+  const cutSelection = useStore((state) => state.cutSelection);
+  const pasteClipboard = useStore((state) => state.pasteClipboard);
+  const selectAllStrokes = useStore((state) => state.selectAllStrokes);
 
   useEffect(() => {
     void init();
@@ -134,6 +143,28 @@ export function App() {
             event.preventDefault();
             toggleLeftPanel();
             return;
+          case 'c':
+            if (selectedStrokeIds.length > 0) {
+              event.preventDefault();
+              copySelection();
+            }
+            return;
+          case 'x':
+            if (selectedStrokeIds.length > 0) {
+              event.preventDefault();
+              void cutSelection();
+            }
+            return;
+          case 'v':
+            event.preventDefault();
+            void pasteClipboard();
+            return;
+          case 'a':
+            if (glyph) {
+              event.preventDefault();
+              selectAllStrokes();
+            }
+            return;
           case '=':
           case '+':
             event.preventDefault();
@@ -157,13 +188,17 @@ export function App() {
       switch (event.key) {
         case 'Delete':
         case 'Backspace':
-          if (glyph) {
+          if (selectedStrokeIds.length > 0) {
+            event.preventDefault();
+            void deleteSelectedStrokes();
+          } else if (glyph) {
             event.preventDefault();
             void deleteGlyph();
           }
           return;
         case 'Escape':
-          closeGlyph();
+          if (selectedStrokeIds.length > 0) clearSelection();
+          else closeGlyph();
           return;
         case 'F1':
           event.preventDefault();
@@ -189,6 +224,9 @@ export function App() {
         case 'e':
           setBrushKind('eraser');
           break;
+        case 'v':
+          toggleCursorMode();
+          break;
         default:
           break;
       }
@@ -197,9 +235,18 @@ export function App() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [
+    clearSelection,
     closeGlyph,
+    copySelection,
+    cursorMode,
+    cutSelection,
     deleteGlyph,
+    deleteSelectedStrokes,
     glyph,
+    pasteClipboard,
+    selectAllStrokes,
+    selectedStrokeIds,
+    toggleCursorMode,
     openAbout,
     openExport,
     openNewProject,

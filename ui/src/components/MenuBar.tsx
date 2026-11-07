@@ -60,6 +60,14 @@ function useMenus(): Menu[] {
   const openAbout = useStore((state) => state.openAbout);
   const openLicense = useStore((state) => state.openLicense);
   const openLanguageDialog = useStore((state) => state.openLanguageDialog);
+  const cursorMode = useStore((state) => state.cursorMode);
+  const toggleCursorMode = useStore((state) => state.toggleCursorMode);
+  const selectedStrokeIds = useStore((state) => state.selectedStrokeIds);
+  const deleteSelectedStrokes = useStore((state) => state.deleteSelectedStrokes);
+  const copySelection = useStore((state) => state.copySelection);
+  const cutSelection = useStore((state) => state.cutSelection);
+  const pasteClipboard = useStore((state) => state.pasteClipboard);
+  const selectAllStrokes = useStore((state) => state.selectAllStrokes);
   const openThemeDialog = useStore((state) => state.openThemeDialog);
 
   return [
@@ -113,6 +121,44 @@ function useMenus(): Menu[] {
           shortcut: 'Esc',
           disabled: !glyph,
           action: closeGlyph,
+        },
+        { separator: true, label: '' },
+        {
+          label: t('menu.edit.cursorMode'),
+          shortcut: 'V',
+          checked: cursorMode,
+          action: toggleCursorMode,
+        },
+        {
+          label: t('menu.edit.selectAll'),
+          shortcut: 'Ctrl+A',
+          disabled: !glyph || glyph.strokes.length === 0,
+          action: selectAllStrokes,
+        },
+        { separator: true, label: '' },
+        {
+          label: t('menu.edit.copy'),
+          shortcut: 'Ctrl+C',
+          disabled: selectedStrokeIds.length === 0,
+          action: copySelection,
+        },
+        {
+          label: t('menu.edit.cut'),
+          shortcut: 'Ctrl+X',
+          disabled: selectedStrokeIds.length === 0,
+          action: () => void cutSelection(),
+        },
+        {
+          label: t('menu.edit.paste'),
+          shortcut: 'Ctrl+V',
+          disabled: !glyph,
+          action: () => void pasteClipboard(),
+        },
+        {
+          label: t('menu.edit.deleteSelected'),
+          shortcut: 'Del',
+          disabled: selectedStrokeIds.length === 0,
+          action: () => void deleteSelectedStrokes(),
         },
       ],
     },
