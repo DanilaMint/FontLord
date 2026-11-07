@@ -44,6 +44,7 @@ function useMenus(): Menu[] {
   const openProject = useStore((state) => state.openProject);
   const saveProject = useStore((state) => state.saveProject);
   const openExport = useStore((state) => state.openExport);
+  const decompileFont = useStore((state) => state.decompileFont);
   const undo = useStore((state) => state.undo);
   const redo = useStore((state) => state.redo);
   const deleteGlyph = useStore((state) => state.deleteGlyph);
@@ -69,6 +70,11 @@ function useMenus(): Menu[] {
           label: 'Сохранить как…',
           shortcut: 'Ctrl+Shift+S',
           action: () => void saveProject(undefined, true),
+        },
+        { separator: true, label: '' },
+        {
+          label: 'Декомпилировать шрифт…',
+          action: () => void decompileFont(),
         },
         { separator: true, label: '' },
         { label: 'Экспортировать шрифт…', shortcut: 'Ctrl+E', action: openExport },

@@ -16,11 +16,13 @@ use fontlord_core::model::{Contour, FontProject, Glyph};
 use fontlord_core::outline::{OutlineSettings, build_glyph_outline};
 
 pub mod cff;
+pub mod decompile;
 pub mod glyf;
 pub mod woff;
 pub mod woff2;
 pub mod writer;
 
+pub use decompile::{DecompileReport, decompile_font};
 pub use woff::build_woff;
 pub use woff2::build_woff2;
 
@@ -50,6 +52,10 @@ pub enum FontError {
     /// Ошибка ввода-вывода.
     #[error("ошибка ввода-вывода: {0}")]
     Io(#[from] std::io::Error),
+
+    /// Не удалось разобрать файл шрифта.
+    #[error("не удалось прочитать шрифт: {0}")]
+    Parse(String),
 }
 
 /// Прежнее имя ошибки сборки шрифта.

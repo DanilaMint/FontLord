@@ -14,7 +14,7 @@ serde.workspace = true
 thiserror.workspace = true
 brotli = "8"
 flate2 = "1"
+ttf-parser = "0.25"
 
 [dev-dependencies]
-ttf-parser = "0.25"
 fontdue = "0.9"

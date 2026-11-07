@@ -163,3 +163,11 @@ export interface ExportReport {
   unitsPerEm: number;
   warnings: string[];
 }
+
+/** Результат декомпиляции шрифта. */
+export interface DecompileOutcome {
+  project: ProjectState;
+  familyName: string;
+  styleName: string;
+  glyphCount: number;
+}

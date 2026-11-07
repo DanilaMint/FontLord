@@ -31,8 +31,11 @@ impl Default for OutlineSettings {
 }
 
 /// Строит контуры глифа по его штрихам.
+///
+/// Базовые контуры (например, из декомпилированного шрифта) сохраняются: они
+/// являются «подложкой», поверх которой строятся контуры штрихов.
 pub fn build_glyph_outline(glyph: &Glyph, settings: &OutlineSettings) -> Vec<Contour> {
-    let mut contours = Vec::new();
+    let mut contours = glyph.base_contours.clone();
 
     for stroke in &glyph.strokes {
         if stroke.kind.is_eraser() {

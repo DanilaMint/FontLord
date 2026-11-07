@@ -103,6 +103,7 @@ interface AppState {
   saveProject: (path?: string, forceDialog?: boolean) => Promise<void>;
   openProject: () => Promise<void>;
   exportFont: (format: FontFormat) => Promise<void>;
+  decompileFont: () => Promise<void>;
   setStatus: (status: string) => void;
   setError: (error: string | null) => void;
 }
@@ -387,10 +388,25 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  async decompileFont() {
+    try {
+      const outcome = await ipc.fontDecompileDialog();
+      if (!outcome) return;
+      set({
+        project: outcome.project,
+        meta: outcome.project.meta,
+        currentCodepoint: null,
+        glyph: null,
+        status: `Декомпилирован шрифт «${outcome.familyName} ${outcome.styleName}» — глифов: ${outcome.glyphCount}`,
+      });
+    } catch (error) {
+      set({ error: String(error) });
+    }
+  },
+
   setStatus(status) {
     set({ status });
   },
-
   setError(error) {
     set({ error });
   },

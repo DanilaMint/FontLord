@@ -63,6 +63,20 @@ pub struct ExportReport {
     pub warnings: Vec<String>,
 }
 
+/// Результат декомпиляции шрифта.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DecompileOutcome {
+    /// Состояние проекта после декомпиляции.
+    pub project: ProjectState,
+    /// Имя семейства исходного шрифта.
+    pub family_name: String,
+    /// Имя начертания исходного шрифта.
+    pub style_name: String,
+    /// Количество перенесённых глифов.
+    pub glyph_count: usize,
+}
+
 fn project_state(state: &AppState) -> ProjectState {
     state.with(|inner| ProjectState {
         meta: inner.project.meta.clone(),
@@ -456,6 +470,40 @@ pub async fn font_export_dialog(
         glyph_count: project.glyphs.len(),
         units_per_em: project.meta.units_per_em,
         warnings: Vec::new(),
+    }))
+}
+
+/// Декомпилирует готовый шрифт в проект через системный диалог.
+#[tauri::command]
+pub async fn font_decompile_dialog(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Result<Option<DecompileOutcome>, String> {
+    let (sender, mut receiver) = tauri::async_runtime::channel::<Option<PathBuf>>(1);
+
+    app.dialog()
+        .file()
+        .set_title("Декомпилировать шрифт")
+        .add_filter("Шрифты", &["ttf", "otf", "ttc", "woff", "woff2"])
+        .add_filter("Все файлы", &["*"])
+        .pick_file(move |file| {
+            let path = file.and_then(|f| f.into_path().ok());
+            drop(sender.send(path));
+        });
+
+    let Some(path) = receiver.recv().await.unwrap_or(None) else {
+        return Ok(None);
+    };
+
+    let data = std::fs::read(&path).map_err(|e| e.to_string())?;
+    let (project, report) = fontlord_ttf::decompile_font(&data).map_err(|e| e.to_string())?;
+    state.replace_project(project, None);
+
+    Ok(Some(DecompileOutcome {
+        project: project_state(&state),
+        family_name: report.family_name,
+        style_name: report.style_name,
+        glyph_count: report.glyph_count,
     }))
 }
 

@@ -45,6 +45,7 @@ pub fn run() {
             commands::project_open_dialog,
             commands::project_save_dialog,
             commands::font_export_dialog,
+            commands::font_decompile_dialog,
             commands::set_window_title,
             commands::app_exit,
             commands::app_license,

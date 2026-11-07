@@ -156,6 +156,12 @@ pub struct Glyph {
     /// Контуры — производные значения (пересчитываются движком кистей).
     #[serde(default)]
     pub contours: Vec<Contour>,
+    /// Базовые контуры глифа (например, полученные при декомпиляции шрифта).
+    ///
+    /// Хранятся отдельно от производных [`Glyph::contours`]: нарисованные
+    /// поверх штрихов добавляются к базовой форме, а не заменяют её.
+    #[serde(default)]
+    pub base_contours: Vec<Contour>,
     /// Якоря глифа.
     #[serde(default)]
     pub anchors: Vec<Anchor>,
@@ -193,6 +199,7 @@ impl Glyph {
             advance_width,
             strokes: Vec::new(),
             contours: Vec::new(),
+            base_contours: Vec::new(),
             anchors: Vec::new(),
             components: Vec::new(),
             notes: String::new(),

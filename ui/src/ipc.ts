@@ -8,6 +8,7 @@ import type {
   BlockInfo,
   BrushPreset,
   CodepointInfo,
+  DecompileOutcome,
   ExportReport,
   FontFormat,
   FontMeta,
@@ -144,6 +145,11 @@ export function glyphOutline(codepoint: number): Promise<OutlineResult | null> {
 /** Экспорт шрифта выбранного формата через диалог. */
 export function fontExportDialog(format: FontFormat): Promise<ExportReport | null> {
   return invoke<ExportReport | null>('font_export_dialog', { format });
+}
+
+/** Декомпиляция готового шрифта через диалог выбора файла. */
+export function fontDecompileDialog(): Promise<DecompileOutcome | null> {
+  return invoke<DecompileOutcome | null>('font_decompile_dialog');
 }
 
 /** Байты шрифта для предпросмотра в интерфейсе. */
