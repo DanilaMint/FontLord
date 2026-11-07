@@ -1,7 +1,6 @@
 # Сборка Rust
 /target
 **/*.rs.bk
-Cargo.lock
 
 # Локальное окружение сборки
 /.local-sys/
