@@ -32,8 +32,9 @@ pub fn decompile_font(data: &[u8]) -> Result<(FontProject, DecompileReport), Fon
     let face = Face::parse(data, 0).map_err(|e| FontError::Parse(e.to_string()))?;
 
     let units_per_em = face.units_per_em();
-    let family_name = name_of(&face, 1).unwrap_or_else(|| "Decompiled Font".to_string());
-    let style_name = name_of(&face, 2).unwrap_or_else(|| "Regular".to_string());
+    let family_name =
+        name_with_fallback(&face, 1, 16).unwrap_or_else(|| "Decompiled Font".to_string());
+    let style_name = name_with_fallback(&face, 2, 17).unwrap_or_else(|| "Regular".to_string());
 
     let meta = FontMeta {
         family_name: family_name.clone(),
@@ -105,8 +106,29 @@ pub fn decompile_font(data: &[u8]) -> Result<(FontProject, DecompileReport), Fon
 }
 
 /// Читает строку из таблицы `name` по идентификатору записи.
+///
+/// Записи с одинаковым идентификатором встречаются несколько раз (для
+/// разных платформ и языков), поэтому предпочтение отдаётся Unicode-записям.
 fn name_of(face: &Face, name_id: u16) -> Option<String> {
-    face.names().get(name_id).and_then(|name| name.to_string())
+    let mut fallback = None;
+    for name in face.names() {
+        if name.name_id != name_id {
+            continue;
+        }
+        let Some(value) = name.to_string() else {
+            continue;
+        };
+        if name.is_unicode() {
+            return Some(value);
+        }
+        fallback = fallback.or(Some(value));
+    }
+    fallback
+}
+
+/// Читает имя с учётом «типографских» записей (16 и 17).
+fn name_with_fallback(face: &Face, name_id: u16, alternate_id: u16) -> Option<String> {
+    name_of(face, name_id).or_else(|| name_of(face, alternate_id))
 }
 
 /// Собирает контуры глифа из потока точек TrueType.
