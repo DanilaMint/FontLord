@@ -30,7 +30,6 @@ deps-ui: ## Установить зависимости фронтенда
 	cd ui && $(PNPM) install
 
 dev: ## Запустить приложение в режиме разработки
-	cd ui && $(PNPM) dev &
 	./ui/node_modules/.bin/tauri dev
 
 build: ## Собрать релизную версию приложения

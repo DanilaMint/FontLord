@@ -45,7 +45,7 @@ jobs:
       - name: Установка pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 12
 
       - name: Установка зависимостей фронтенда
         run: pnpm --dir ui install --frozen-lockfile
@@ -69,10 +69,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Фиксация версии Tauri
+        run: cargo update -p tauri --precise 2.12.5
       - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 12
 
       - name: Установка системных зависимостей
         run: |
@@ -96,10 +98,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Фиксация версии Tauri
+        run: cargo update -p tauri --precise 2.12.5
       - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 12
 
       - name: Установка зависимостей фронтенда
         run: pnpm --dir ui install --frozen-lockfile
@@ -118,10 +122,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Фиксация версии Tauri
+        run: cargo update -p tauri --precise 2.12.5
       - uses: Swatinem/rust-cache@v2
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 12
 
       - name: Установка зависимостей фронтенда
         run: pnpm --dir ui install --frozen-lockfile
