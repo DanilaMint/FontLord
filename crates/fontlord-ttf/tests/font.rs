@@ -6,7 +6,7 @@
 
 use fontlord_core::brush::{BrushKind, BrushSettings};
 use fontlord_core::model::{FontProject, Glyph, Stroke, StrokePoint};
-use fontlord_ttf::build_truetype;
+use fontlord_ttf::{build_opentype, build_truetype, build_woff, build_woff2};
 
 fn sample_project() -> FontProject {
     let mut project = FontProject::new("Fontlord Test", "Regular");
@@ -118,4 +118,105 @@ fn exported_font_without_glyphs_is_still_valid() {
     let bytes = build_truetype(&project).expect("шрифт собран");
     let face = ttf_parser::Face::parse(&bytes, 0).expect("шрифт разбирается");
     assert_eq!(face.number_of_glyphs(), 1);
+}
+
+#[test]
+fn opentype_font_contains_cff_table() {
+    let bytes = build_opentype(&sample_project()).expect("шрифт собран");
+
+    // Версия sfnt для шрифтов с контурами CFF.
+    assert_eq!(&bytes[0..4], b"OTTO");
+    // Таблица `CFF ` присутствует в каталоге.
+    assert!(
+        bytes.windows(4).any(|window| window == b"CFF "),
+        "нет таблицы CFF"
+    );
+    // Таблицы `glyf` и `loca` в таком шрифте отсутствуют.
+    assert!(!bytes.windows(4).any(|window| window == b"glyf"));
+}
+
+#[test]
+fn woff_container_has_valid_header() {
+    let bytes = build_woff(&sample_project()).expect("шрифт собран");
+
+    assert_eq!(&bytes[0..4], b"wOFF");
+    let length = u32::from_be_bytes([bytes[8], bytes[9], bytes[10], bytes[11]]);
+    assert_eq!(
+        length as usize,
+        bytes.len(),
+        "длина в заголовке не совпадает"
+    );
+
+    let num_tables = u16::from_be_bytes([bytes[12], bytes[13]]);
+    assert!(num_tables > 0);
+
+    // Заголовок каталога содержит теги таблиц.
+    let directory_start = 44;
+    let tag = &bytes[directory_start..directory_start + 4];
+    assert!(
+        [
+            "cmap", "glyf", "head", "hhea", "hmtx", "maxp", "name", "OS/2", "post"
+        ]
+        .iter()
+        .any(|known| known.as_bytes() == tag),
+        "неожиданный тег в каталоге: {:?}",
+        String::from_utf8_lossy(tag)
+    );
+}
+
+#[test]
+fn woff2_container_has_valid_directory() {
+    let bytes = build_woff2(&sample_project()).expect("шрифт собран");
+
+    assert_eq!(&bytes[0..4], b"wOF2");
+    let length = u32::from_be_bytes([bytes[8], bytes[9], bytes[10], bytes[11]]);
+    assert_eq!(
+        length as usize,
+        bytes.len(),
+        "длина в заголовке не совпадает"
+    );
+
+    let num_tables = u16::from_be_bytes([bytes[12], bytes[13]]);
+    assert!(num_tables > 0);
+
+    // Каталог читается: у каждой записи есть тег и длина таблицы.
+    let mut position = 48usize;
+    let mut seen_glyf = false;
+    for _ in 0..num_tables {
+        let flags = bytes[position];
+        position += 1;
+        let known = flags & 0x3F;
+        if known == 0x3F {
+            position += 4; // произвольный тег
+        }
+        let (length, next) = read_base128(&bytes, position);
+        position = next;
+        assert!(length > 0, "у таблицы нулевая длина");
+        // Преобразование применяется только к `glyf` и `loca`.
+        let transform = flags >> 6;
+        assert!(
+            transform == 0 || transform == 3,
+            "неизвестное преобразование"
+        );
+        if known == 10 {
+            // Индекс 10 в списке известных тегов — `glyf`.
+            seen_glyf = true;
+            assert_eq!(transform, 3, "`glyf` записывается без преобразования");
+        }
+    }
+    assert!(seen_glyf, "в каталоге нет таблицы `glyf`");
+}
+
+/// Читает число в формате UIntBase128.
+fn read_base128(data: &[u8], mut position: usize) -> (u32, usize) {
+    let mut value = 0u32;
+    for _ in 0..5 {
+        let byte = data[position];
+        position += 1;
+        value = (value << 7) | u32::from(byte & 0x7F);
+        if byte & 0x80 == 0 {
+            return (value, position);
+        }
+    }
+    panic!("некорректное число UIntBase128");
 }

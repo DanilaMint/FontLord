@@ -152,6 +152,9 @@ export interface OutlineResult {
   };
 }
 
+/** Формат экспортируемого шрифта. */
+export type FontFormat = 'ttf' | 'otf' | 'woff' | 'woff2';
+
 /** Отчёт об экспорте. */
 export interface ExportReport {
   path: string;

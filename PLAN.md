@@ -19,7 +19,7 @@ Fontlord — редактор шрифтов, в котором символ р�
 | 3 | Рисование как в растре | Холст `<canvas>`, штрихи с нажимом |
 | 4 | Кисти преобразуют рисунок в вектор | `fontlord_core::stroke` + `outline` |
 | 5 | Промежуточные сохранения проекта | Формат `.fontlord`, `fontlord_core::project` |
-| 6 | Экспорт готового шрифта | `fontlord_ttf`, таблицы `glyf`/`cmap`/… |
+| 6 | Экспорт готового шрифта | `fontlord_ttf`: TrueType, OpenType (CFF), WOFF, WOFF2 |
 | 7 | Задел под лигатуры и диакритику | `fontlord_core::features`, поля модели |
 
 ## 2. Архитектура
@@ -28,7 +28,7 @@ Fontlord — редактор шрифтов, в котором символ р�
 fontlord/
 ├── crates/
 │   ├── fontlord-core/     домен: модель, кисти, контуры, индекс Unicode, формат проекта
-│   ├── fontlord-ttf/      сборщик шрифтов TrueType (таблицы glyf, cmap, name, OS/2, kern)
+│   ├── fontlord-ttf/      сборщики шрифтов: TrueType (glyf), OpenType (CFF), WOFF, WOFF2
 │   └── fontlord-cli/      консольные утилиты: info, glyphs, export, demo
 ├── src-tauri/             оболочка Tauri: IPC-команды, состояние, история изменений
 ├── ui/                    фронтенд: React + TypeScript + Vite

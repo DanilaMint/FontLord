@@ -32,12 +32,17 @@ enum Command {
         /// Файл проекта.
         project: PathBuf,
     },
-    /// Собрать шрифт TrueType из проекта.
+    /// Собрать шрифт из проекта.
     Export {
         /// Файл проекта.
         project: PathBuf,
         /// Куда сохранить шрифт.
         output: PathBuf,
+        /// Формат шрифта: ttf, otf, woff или woff2.
+        ///
+        /// По умолчанию определяется по расширению выходного файла.
+        #[arg(long, value_parser = ["ttf", "otf", "woff", "woff2"])]
+        format: Option<String>,
     },
     /// Вывести список глифов проекта.
     Glyphs {
@@ -60,17 +65,23 @@ fn main() -> Result<()> {
             print_info(&project);
             Ok(())
         }
-        Command::Export { project, output } => {
+        Command::Export {
+            project,
+            output,
+            format,
+        } => {
             let project = load(&project)?;
+            let format = resolve_format(format.as_deref(), &output)?;
             let bytes =
-                fontlord_ttf::build_truetype(&project).context("не удалось собрать шрифт")?;
+                fontlord_ttf::build_font(&project, format).context("не удалось собрать шрифт")?;
             std::fs::write(&output, &bytes)
                 .with_context(|| format!("не удалось записать {}", output.display()))?;
             println!(
-                "Шрифт записан: {} ({} байт, {} глифов)",
+                "Шрифт записан: {} ({} байт, {} глифов, формат {})",
                 output.display(),
                 bytes.len(),
-                project.glyphs.len()
+                project.glyphs.len(),
+                format.label()
             );
             Ok(())
         }
@@ -109,6 +120,24 @@ fn main() -> Result<()> {
 fn load(path: &Path) -> Result<FontProject> {
     fontlord_core::project::load(path)
         .with_context(|| format!("не удалось прочитать проект {}", path.display()))
+}
+
+/// Определяет формат шрифта: по аргументу `--format` или по расширению файла.
+fn resolve_format(requested: Option<&str>, output: &Path) -> Result<fontlord_ttf::FontFormat> {
+    if let Some(value) = requested {
+        let format = fontlord_ttf::FontFormat::from_extension(value)
+            .ok_or_else(|| anyhow::anyhow!("неизвестный формат: {value}"))?;
+        return Ok(format);
+    }
+    let extension = output
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default();
+    fontlord_ttf::FontFormat::from_extension(extension).ok_or_else(|| {
+        anyhow::anyhow!(
+            "не удалось определить формат по расширению «{extension}», укажите --format"
+        )
+    })
 }
 
 /// Печатает сводку по проекту.

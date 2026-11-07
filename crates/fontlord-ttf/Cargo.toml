@@ -1,6 +1,6 @@
 [package]
 name = "fontlord-ttf"
-description = "TrueType (glyf) font writer used by Fontlord to export font projects"
+description = "Font writers used by Fontlord: TrueType, OpenType (CFF), WOFF and WOFF2"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,6 +12,8 @@ authors.workspace = true
 fontlord-core.workspace = true
 serde.workspace = true
 thiserror.workspace = true
+brotli = "8"
+flate2 = "1"
 
 [dev-dependencies]
 ttf-parser = "0.25"

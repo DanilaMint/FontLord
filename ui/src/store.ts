@@ -14,6 +14,7 @@ import type {
   BrushPreset,
   BrushSettings,
   CodepointInfo,
+  FontFormat,
   FontMeta,
   Glyph,
   ProjectState,
@@ -61,6 +62,7 @@ interface AppState {
   error: string | null;
   newProjectOpen: boolean;
   aboutOpen: boolean;
+  exportOpen: boolean;
   leftPanelVisible: boolean;
 
   /* Масштаб холста */
@@ -89,13 +91,15 @@ interface AppState {
   closeNewProject: () => void;
   openAbout: () => void;
   closeAbout: () => void;
+  openExport: () => void;
+  closeExport: () => void;
   toggleLeftPanel: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
   zoomReset: () => void;
   saveProject: (path?: string, forceDialog?: boolean) => Promise<void>;
   openProject: () => Promise<void>;
-  exportFont: () => Promise<void>;
+  exportFont: (format: FontFormat) => Promise<void>;
   setStatus: (status: string) => void;
   setError: (error: string | null) => void;
 }
@@ -123,6 +127,7 @@ export const useStore = create<AppState>((set, get) => ({
   error: null,
   newProjectOpen: false,
   aboutOpen: false,
+  exportOpen: false,
   leftPanelVisible: true,
 
   zoom: 1,
@@ -349,11 +354,20 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  async exportFont() {
+  openExport() {
+    set({ exportOpen: true });
+  },
+
+  closeExport() {
+    set({ exportOpen: false });
+  },
+
+  async exportFont(format: FontFormat) {
     try {
-      const report = await ipc.fontExportDialog();
+      const report = await ipc.fontExportDialog(format);
       if (!report) return;
       set({
+        exportOpen: false,
         status: `Шрифт сохранён: ${report.path} (${report.glyphCount} глифов, ${report.bytes} Б)`,
       });
     } catch (error) {

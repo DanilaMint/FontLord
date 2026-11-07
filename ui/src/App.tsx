@@ -5,6 +5,7 @@
 import { useEffect } from 'react';
 
 import { AboutDialog } from './components/AboutDialog';
+import { ExportDialog } from './components/ExportDialog';
 import { FontSettings } from './components/FontSettings';
 import { FontPreview, GlyphInspector } from './components/GlyphInspector';
 import { GlyphCanvas } from './components/GlyphCanvas';
@@ -39,7 +40,7 @@ export function App() {
   const redo = useStore((state) => state.redo);
   const saveProject = useStore((state) => state.saveProject);
   const openProject = useStore((state) => state.openProject);
-  const exportFont = useStore((state) => state.exportFont);
+  const openExport = useStore((state) => state.openExport);
   const closeGlyph = useStore((state) => state.closeGlyph);
   const openNewProject = useStore((state) => state.openNewProject);
   const openAbout = useStore((state) => state.openAbout);
@@ -99,7 +100,7 @@ export function App() {
             return;
           case 'e':
             event.preventDefault();
-            void exportFont();
+            openExport();
             return;
           case 'z':
             event.preventDefault();
@@ -183,9 +184,9 @@ export function App() {
   }, [
     closeGlyph,
     deleteGlyph,
-    exportFont,
     glyph,
     openAbout,
+    openExport,
     openNewProject,
     openProject,
     redo,
@@ -237,8 +238,8 @@ export function App() {
           <button type="button" onClick={() => void saveProject()}>
             Сохранить
           </button>
-          <button type="button" className="primary" onClick={() => void exportFont()}>
-            Экспорт TTF
+          <button type="button" className="primary" onClick={openExport}>
+            Экспорт
           </button>
         </div>
       </header>
@@ -278,6 +279,7 @@ export function App() {
       </main>
 
       <NewProjectDialog />
+      <ExportDialog />
       <AboutDialog />
 
       <footer className="statusbar">

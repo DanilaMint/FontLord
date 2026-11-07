@@ -727,6 +727,39 @@ input[type='range']::-moz-range-thumb {
   margin-top: 18px;
 }
 
+.format-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.format-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  text-align: left;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.format-item:hover {
+  border-color: var(--accent);
+}
+
+.format-item strong {
+  font-size: 12px;
+}
+
+.format-item small {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
 /* ---------- Меню верхнего уровня ---------- */
 
 .menubar {

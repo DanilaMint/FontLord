@@ -8,12 +8,13 @@
 #   make test     прогнать тесты
 #   make check    форматирование, статический анализ и тесты
 #   make icons    перегенерировать иконки приложения
+#   make dist     собрать под все доступные платформы (tools/build-all.sh)
 #   make clean    удалить артефакты сборки
 
 CARGO ?= cargo
 PNPM ?= pnpm
 
-.PHONY: help deps env deps-ui dev build bundle test check fmt clippy icons clean
+.PHONY: help deps env deps-ui dev build bundle dist test check fmt clippy icons clean
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -30,14 +31,17 @@ deps-ui: ## Установить зависимости фронтенда
 
 dev: ## Запустить приложение в режиме разработки
 	cd ui && $(PNPM) dev &
-	$(CARGO) tauri dev
+	./ui/node_modules/.bin/tauri dev
 
 build: ## Собрать релизную версию приложения
 	cd ui && $(PNPM) build
 	$(CARGO) build --release -p fontlord -p fontlord-cli
 
 bundle: ## Собрать установочные пакеты (deb, rpm, AppImage, dmg, msi, nsis)
-	cd ui && $(PNPM) tauri build
+	./ui/node_modules/.bin/tauri build
+
+dist: ## Собрать под все доступные платформы
+	./tools/build-all.sh
 
 test: ## Прогнать тесты
 	$(CARGO) test --workspace

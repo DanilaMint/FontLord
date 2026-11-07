@@ -82,11 +82,11 @@ jobs:
             libxdo-dev patchelf build-essential file pkg-config
 
       - run: pnpm --dir ui install --frozen-lockfile
-      - run: pnpm --dir ui tauri build --bundles deb,appimage,rpm
+      - run: ./ui/node_modules/.bin/tauri build --bundles deb,appimage,rpm
       - uses: actions/upload-artifact@v4
         with:
           name: fontlord-linux
-          path: src-tauri/target/release/bundle/**
+          path: target/release/bundle/**
           if-no-files-found: error
 
   macos:
@@ -104,11 +104,11 @@ jobs:
       - name: Установка зависимостей фронтенда
         run: pnpm --dir ui install --frozen-lockfile
 
-      - run: pnpm --dir ui tauri build --bundles app,dmg
+      - run: ./ui/node_modules/.bin/tauri build --bundles app,dmg
       - uses: actions/upload-artifact@v4
         with:
           name: fontlord-macos
-          path: src-tauri/target/release/bundle/**
+          path: target/release/bundle/**
           if-no-files-found: error
 
   windows:
@@ -126,9 +126,9 @@ jobs:
       - name: Установка зависимостей фронтенда
         run: pnpm --dir ui install --frozen-lockfile
 
-      - run: pnpm --dir ui tauri build --bundles msi,nsis
+      - run: ./ui/node_modules/.bin/tauri build --bundles msi,nsis
       - uses: actions/upload-artifact@v4
         with:
           name: fontlord-windows
-          path: src-tauri/target/release/bundle/**
+          path: target/release/bundle/**
           if-no-files-found: error

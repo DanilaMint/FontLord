@@ -55,6 +55,41 @@ impl Writer {
         self
     }
 
+    /// Записывает целое число в формате словаря DICT (CFF).
+    ///
+    /// Малые числа кодируются одним байтом, средние — двумя, остальные —
+    /// 16- или 32-битными числами.
+    pub fn number(&mut self, value: i32) -> &mut Self {
+        if (-107..=107).contains(&value) {
+            self.u8((value + 139) as u8);
+        } else if (-1131..=-108).contains(&value) {
+            let value = -value - 108;
+            self.u8(((value >> 8) + 251) as u8);
+            self.u8((value & 0xFF) as u8);
+        } else if (108..=1131).contains(&value) {
+            let value = value - 108;
+            self.u8(((value >> 8) + 247) as u8);
+            self.u8((value & 0xFF) as u8);
+        } else if (-32768..=32767).contains(&value) {
+            self.u8(28);
+            self.u16(value as u16);
+        } else {
+            self.u8(29);
+            self.u32(value as u32);
+        }
+        self
+    }
+
+    /// Записывает смещение в словаре DICT фиксированным пятибайтовым форматом.
+    ///
+    /// Смещения всегда кодируются 32-битным числом, чтобы длина словаря не
+    /// зависела от значений смещений.
+    pub fn offset(&mut self, value: u32) -> &mut Self {
+        self.u8(29);
+        self.u32(value);
+        self
+    }
+
     /// Записывает строку в кодировке UTF-16BE без префикса длины.
     ///
     /// Так строки хранятся в таблице `name` для платформы Windows.

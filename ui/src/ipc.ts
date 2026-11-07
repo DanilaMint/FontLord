@@ -9,6 +9,7 @@ import type {
   BrushPreset,
   CodepointInfo,
   ExportReport,
+  FontFormat,
   FontMeta,
   Glyph,
   OutlineResult,
@@ -140,9 +141,9 @@ export function glyphOutline(codepoint: number): Promise<OutlineResult | null> {
   return invoke<OutlineResult | null>('glyph_outline', { codepoint });
 }
 
-/** Экспорт шрифта через диалог. */
-export function fontExportDialog(): Promise<ExportReport | null> {
-  return invoke<ExportReport | null>('font_export_dialog');
+/** Экспорт шрифта выбранного формата через диалог. */
+export function fontExportDialog(format: FontFormat): Promise<ExportReport | null> {
+  return invoke<ExportReport | null>('font_export_dialog', { format });
 }
 
 /** Байты шрифта для предпросмотра в интерфейсе. */

@@ -1,26 +1,44 @@
 //! # Fontlord TTF
 //!
-//! Сборщик шрифтов TrueType (`glyf`). Принимает проект [`fontlord_core`] и
-//! возвращает готовый файл `.ttf`, который можно установить в систему или
-//! открыть в любом редакторе шрифтов.
+//! Сборщики шрифтов: TrueType (`glyf`), OpenType с контурами CFF (`.otf`),
+//! а также веб-форматы WOFF и WOFF2.
 //!
-//! Поддерживаются таблицы: `head`, `hhea`, `maxp`, `hmtx`, `cmap` (форматы 4 и
-//! 12), `glyf`, `loca`, `name`, `OS/2`, `post`, `kern`.
+//! Принимают проект [`fontlord_core`] и возвращают готовый файл `.ttf`,
+//! `.otf`, `.woff` или `.woff2`, который можно установить в систему, загрузить
+//! в браузер или открыть в любом редакторе шрифтов.
+//!
+//! Поддерживаемые таблицы TrueType: `head`, `hhea`, `maxp`, `hmtx`, `cmap`
+//! (форматы 4 и 12), `glyf`, `loca`, `name`, `OS/2`, `post`, `kern`.
 
 use std::collections::BTreeMap;
 
 use fontlord_core::model::{Contour, FontProject, Glyph};
 use fontlord_core::outline::{OutlineSettings, build_glyph_outline};
 
+pub mod cff;
 pub mod glyf;
+pub mod woff;
+pub mod woff2;
 pub mod writer;
 
-use glyf::{BoundingBox, GlyphPoint, SimpleGlyph, encode_simple_glyph, normalize_contour};
+pub use woff::build_woff;
+pub use woff2::build_woff2;
+
+use glyf::{GlyphPoint, SimpleGlyph, encode_simple_glyph, normalize_contour};
 use writer::{Writer, checksum};
+
+/// Таблица шрифта: четырёхсимвольный тег и содержимое.
+pub(crate) type Table = (&'static [u8; 4], Vec<u8>);
+
+/// Версия sfnt для шрифтов TrueType.
+pub(crate) const SFNT_TRUETYPE: u32 = 0x0001_0000;
+
+/// Версия sfnt для шрифтов OpenType с контурами CFF.
+pub(crate) const SFNT_CFF: u32 = 0x4F54_544F;
 
 /// Ошибка сборки шрифта.
 #[derive(Debug, thiserror::Error)]
-pub enum TtfError {
+pub enum FontError {
     /// В проекте нет ни одного глифа.
     #[error("в проекте нет глифов — нечего экспортировать")]
     EmptyProject,
@@ -34,6 +52,83 @@ pub enum TtfError {
     Io(#[from] std::io::Error),
 }
 
+/// Прежнее имя ошибки сборки шрифта.
+pub type TtfError = FontError;
+
+/// Поддерживаемые форматы экспорта.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FontFormat {
+    /// TrueType: контуры в таблице `glyf`. Расширение `.ttf`.
+    Ttf,
+    /// OpenType: контуры CFF в таблице `CFF `. Расширение `.otf`.
+    Otf,
+    /// Web Open Font Format 1.0. Расширение `.woff`.
+    Woff,
+    /// Web Open Font Format 2.0. Расширение `.woff2`.
+    Woff2,
+}
+
+impl FontFormat {
+    /// Расширение файла для формата.
+    pub fn extension(self) -> &'static str {
+        match self {
+            FontFormat::Ttf => "ttf",
+            FontFormat::Otf => "otf",
+            FontFormat::Woff => "woff",
+            FontFormat::Woff2 => "woff2",
+        }
+    }
+
+    /// Определяет формат по расширению файла.
+    pub fn from_extension(extension: &str) -> Option<Self> {
+        let extension = extension
+            .trim()
+            .trim_start_matches('.')
+            .to_ascii_lowercase();
+        match extension.as_str() {
+            "ttf" => Some(FontFormat::Ttf),
+            "otf" => Some(FontFormat::Otf),
+            "woff" => Some(FontFormat::Woff),
+            "woff2" => Some(FontFormat::Woff2),
+            _ => None,
+        }
+    }
+
+    /// Человекочитаемое название формата.
+    pub fn label(self) -> &'static str {
+        match self {
+            FontFormat::Ttf => "TrueType (.ttf)",
+            FontFormat::Otf => "OpenType CFF (.otf)",
+            FontFormat::Woff => "Web Open Font Format (.woff)",
+            FontFormat::Woff2 => "Web Open Font Format 2 (.woff2)",
+        }
+    }
+
+    /// Все форматы в порядке отображения в интерфейсе.
+    pub fn all() -> [FontFormat; 4] {
+        [
+            FontFormat::Ttf,
+            FontFormat::Otf,
+            FontFormat::Woff,
+            FontFormat::Woff2,
+        ]
+    }
+}
+
+/// Подготовленный глиф шрифта.
+pub(crate) struct PreparedGlyph {
+    /// Контуры в квадратичном представлении (TrueType).
+    pub contours: Vec<Contour>,
+    /// Глиф в виде простого глифа таблицы `glyf`.
+    pub simple: SimpleGlyph,
+    /// Ширина продвижения.
+    pub advance_width: u16,
+    /// Левое боковое поле.
+    pub lsb: i16,
+    /// Имя глифа.
+    pub name: String,
+}
+
 /// Готовый глиф шрифта.
 struct BuiltGlyph {
     /// Данные таблицы `glyf`.
@@ -42,29 +137,52 @@ struct BuiltGlyph {
     advance_width: u16,
     /// Левое боковое поле.
     lsb: i16,
-    /// Границы глифа.
-    bbox: BoundingBox,
+}
+
+/// Собирает шрифт в выбранном формате.
+pub fn build_font(project: &FontProject, format: FontFormat) -> Result<Vec<u8>, FontError> {
+    match format {
+        FontFormat::Ttf => build_truetype(project),
+        FontFormat::Otf => build_opentype(project),
+        FontFormat::Woff => woff::build_woff(project),
+        FontFormat::Woff2 => woff2::build_woff2(project),
+    }
 }
 
 /// Собирает шрифт TrueType из проекта.
-pub fn build_truetype(project: &FontProject) -> Result<Vec<u8>, TtfError> {
+pub fn build_truetype(project: &FontProject) -> Result<Vec<u8>, FontError> {
+    let tables = truetype_tables(project)?;
+    Ok(assemble(SFNT_TRUETYPE, tables))
+}
+
+/// Собирает шрифт OpenType с контурами CFF из проекта.
+pub fn build_opentype(project: &FontProject) -> Result<Vec<u8>, FontError> {
+    let tables = opentype_tables(project)?;
+    Ok(assemble(SFNT_CFF, tables))
+}
+
+/// Готовит глифы проекта: контуры, метрики и карту кодов в индексы глифов.
+pub(crate) fn prepare_glyphs(
+    project: &FontProject,
+) -> Result<(Vec<PreparedGlyph>, BTreeMap<u32, u16>), FontError> {
     let upem = project.meta.units_per_em;
     if !(16..=16384).contains(&upem) {
-        return Err(TtfError::InvalidMetrics(format!(
+        return Err(FontError::InvalidMetrics(format!(
             "единицы на em должны быть в диапазоне 16..=16384, получено {upem}"
         )));
     }
 
-    // 1. Список глифов: .notdef + глифы проекта по возрастанию кода.
+    // Список глифов: .notdef + глифы проекта по возрастанию кода.
     let mut entries: Vec<(u32, &Glyph)> = project.glyphs.iter().map(|(cp, g)| (*cp, g)).collect();
     entries.sort_by_key(|(cp, _)| *cp);
 
-    let mut built: Vec<BuiltGlyph> = Vec::with_capacity(entries.len() + 1);
-    built.push(BuiltGlyph {
-        data: Vec::new(),
+    let mut prepared: Vec<PreparedGlyph> = Vec::with_capacity(entries.len() + 1);
+    prepared.push(PreparedGlyph {
+        contours: Vec::new(),
+        simple: SimpleGlyph::default(),
         advance_width: upem / 2,
         lsb: 0,
-        bbox: BoundingBox::default(),
+        name: ".notdef".to_string(),
     });
 
     let mut codepoint_to_gid: BTreeMap<u32, u16> = BTreeMap::new();
@@ -73,99 +191,26 @@ pub fn build_truetype(project: &FontProject) -> Result<Vec<u8>, TtfError> {
     for (gid, (codepoint, glyph)) in (1u16..).zip(entries.iter()) {
         let contours = collect_contours(glyph, &settings);
         let simple = to_simple_glyph(&contours);
-        let data = encode_simple_glyph(&simple);
         let lsb = if simple.bbox.is_empty() {
             0
         } else {
             simple.bbox.x_min
         };
-        built.push(BuiltGlyph {
-            data,
+        prepared.push(PreparedGlyph {
+            contours,
+            simple,
             advance_width: glyph.advance_width,
             lsb,
-            bbox: simple.bbox,
+            name: if glyph.name.trim().is_empty() {
+                fontlord_core::unicode::postscript_name(*codepoint)
+            } else {
+                glyph.name.clone()
+            },
         });
         codepoint_to_gid.insert(*codepoint, gid);
     }
 
-    // 2. Общие метрики.
-    let mut x_min = i16::MAX;
-    let mut y_min = i16::MAX;
-    let mut x_max = i16::MIN;
-    let mut y_max = i16::MIN;
-    let mut advance_max = 0u16;
-    let mut min_lsb = i16::MAX;
-    let mut min_rsb = i16::MAX;
-    let mut max_extent = i16::MIN;
-    let mut max_points = 0u16;
-    let mut max_contours = 0u16;
-
-    for glyph in &built {
-        advance_max = advance_max.max(glyph.advance_width);
-        if !glyph.data.is_empty() {
-            x_min = x_min.min(glyph.bbox.x_min);
-            y_min = y_min.min(glyph.bbox.y_min);
-            x_max = x_max.max(glyph.bbox.x_max);
-            y_max = y_max.max(glyph.bbox.y_max);
-            min_lsb = min_lsb.min(glyph.lsb);
-            min_rsb = min_rsb.min(glyph.advance_width as i16 - glyph.lsb);
-            max_extent = max_extent.max(glyph.bbox.x_max);
-            let (points, contours) = count_points(glyph);
-            max_points = max_points.max(points);
-            max_contours = max_contours.max(contours);
-        }
-    }
-    if x_min > x_max {
-        x_min = 0;
-        y_min = 0;
-        x_max = 0;
-        y_max = 0;
-    }
-    if min_lsb > x_max {
-        min_lsb = 0;
-    }
-    if min_rsb > x_max {
-        min_rsb = 0;
-    }
-    if max_extent < x_min {
-        max_extent = x_max;
-    }
-
-    // 3. Таблицы.
-    let glyf_table = build_glyf_table(&built);
-    let loca_table = build_loca_table(&built);
-    let cmap_table = build_cmap_table(&codepoint_to_gid);
-    let hmtx_table = build_hmtx_table(&built);
-    let kern_table = build_kern_table(project, &codepoint_to_gid);
-    let name_table = build_name_table(project);
-    let os2_table = build_os2_table(project, &codepoint_to_gid, &built);
-    let post_table = build_post_table(project);
-    let head_table = build_head_table(project, (x_min, y_min, x_max, y_max), upem);
-    let hhea_table = build_hhea_table(
-        project,
-        advance_max,
-        min_lsb,
-        min_rsb,
-        max_extent,
-        built.len() as u16,
-    );
-    let maxp_table = build_maxp_table(built.len() as u16, max_points, max_contours);
-
-    let tables: Vec<(&[u8; 4], Vec<u8>)> = vec![
-        (b"OS/2", os2_table),
-        (b"cmap", cmap_table),
-        (b"glyf", glyf_table),
-        (b"head", head_table),
-        (b"hhea", hhea_table),
-        (b"hmtx", hmtx_table),
-        (b"kern", kern_table),
-        (b"loca", loca_table),
-        (b"maxp", maxp_table),
-        (b"name", name_table),
-        (b"post", post_table),
-    ];
-
-    Ok(assemble(tables))
+    Ok((prepared, codepoint_to_gid))
 }
 
 /// Собирает контуры глифа, включая раскрытие компонентов.
@@ -192,19 +237,213 @@ fn to_simple_glyph(contours: &[Contour]) -> SimpleGlyph {
     result
 }
 
-/// Считает количество точек и контуров глифа (для `maxp`).
-fn count_points(glyph: &BuiltGlyph) -> (u16, u16) {
-    if glyph.data.is_empty() {
-        return (0, 0);
+/// Общие метрики шрифта.
+struct FontMetrics {
+    x_min: i16,
+    y_min: i16,
+    x_max: i16,
+    y_max: i16,
+    advance_max: u16,
+    min_lsb: i16,
+    min_rsb: i16,
+    max_extent: i16,
+    max_points: u16,
+    max_contours: u16,
+}
+
+/// Считает метрики шрифта по подготовленным глифам.
+fn compute_metrics(prepared: &[PreparedGlyph]) -> FontMetrics {
+    let mut x_min = i16::MAX;
+    let mut y_min = i16::MAX;
+    let mut x_max = i16::MIN;
+    let mut y_max = i16::MIN;
+    let mut advance_max = 0u16;
+    let mut min_lsb = i16::MAX;
+    let mut min_rsb = i16::MAX;
+    let mut max_extent = i16::MIN;
+    let mut max_points = 0u16;
+    let mut max_contours = 0u16;
+
+    for glyph in prepared {
+        advance_max = advance_max.max(glyph.advance_width);
+        if glyph.simple.contours.is_empty() {
+            continue;
+        }
+        let bbox = glyph.simple.bbox;
+        x_min = x_min.min(bbox.x_min);
+        y_min = y_min.min(bbox.y_min);
+        x_max = x_max.max(bbox.x_max);
+        y_max = y_max.max(bbox.y_max);
+        min_lsb = min_lsb.min(glyph.lsb);
+        min_rsb = min_rsb.min(glyph.advance_width as i16 - glyph.lsb);
+        max_extent = max_extent.max(bbox.x_max);
+
+        let points: u16 = glyph
+            .simple
+            .contours
+            .iter()
+            .map(|contour| contour.len() as u16)
+            .sum();
+        max_points = max_points.max(points);
+        max_contours = max_contours.max(glyph.simple.contours.len() as u16);
     }
-    let contours = i16::from_be_bytes([glyph.data[0], glyph.data[1]]).max(0) as u16;
-    // endPtsOfContours[contours - 1] + 1 = количество точек
-    let offset = 10 + (contours as usize - 1) * 2;
-    if glyph.data.len() < offset + 2 {
-        return (0, contours);
+
+    if x_min > x_max {
+        x_min = 0;
+        y_min = 0;
+        x_max = 0;
+        y_max = 0;
     }
-    let last = u16::from_be_bytes([glyph.data[offset], glyph.data[offset + 1]]);
-    (last + 1, contours)
+    if min_lsb > x_max {
+        min_lsb = 0;
+    }
+    if min_rsb > x_max {
+        min_rsb = 0;
+    }
+    if max_extent < x_min {
+        max_extent = x_max;
+    }
+
+    FontMetrics {
+        x_min,
+        y_min,
+        x_max,
+        y_max,
+        advance_max,
+        min_lsb,
+        min_rsb,
+        max_extent,
+        max_points,
+        max_contours,
+    }
+}
+
+/// Кодирует подготовленные глифы в данные таблицы `glyf`.
+fn build_glyf_data(prepared: &[PreparedGlyph]) -> Vec<BuiltGlyph> {
+    prepared
+        .iter()
+        .map(|glyph| BuiltGlyph {
+            data: encode_simple_glyph(&glyph.simple),
+            advance_width: glyph.advance_width,
+            lsb: glyph.lsb,
+        })
+        .collect()
+}
+
+/// Таблицы шрифта TrueType.
+pub(crate) fn truetype_tables(project: &FontProject) -> Result<Vec<Table>, FontError> {
+    let (prepared, codepoint_to_gid) = prepare_glyphs(project)?;
+    let metrics = compute_metrics(&prepared);
+    let built = build_glyf_data(&prepared);
+
+    let glyf_table = build_glyf_table(&built);
+    let loca_table = build_loca_table(&built);
+    let cmap_table = build_cmap_table(&codepoint_to_gid);
+    let hmtx_table = build_hmtx_table(&built);
+    let kern_table = build_kern_table(project, &codepoint_to_gid);
+    let name_table = build_name_table(project);
+    let os2_table = build_os2_table(project, &codepoint_to_gid, &prepared);
+    let post_table = build_post_table(project);
+    let head_table = build_head_table(
+        project,
+        (metrics.x_min, metrics.y_min, metrics.x_max, metrics.y_max),
+        project.meta.units_per_em,
+        true,
+    );
+    let hhea_table = build_hhea_table(
+        project,
+        metrics.advance_max,
+        metrics.min_lsb,
+        metrics.min_rsb,
+        metrics.max_extent,
+        prepared.len() as u16,
+    );
+    let maxp_table = build_maxp_table(
+        prepared.len() as u16,
+        metrics.max_points,
+        metrics.max_contours,
+    );
+
+    Ok(vec![
+        (b"OS/2", os2_table),
+        (b"cmap", cmap_table),
+        (b"glyf", glyf_table),
+        (b"head", head_table),
+        (b"hhea", hhea_table),
+        (b"hmtx", hmtx_table),
+        (b"kern", kern_table),
+        (b"loca", loca_table),
+        (b"maxp", maxp_table),
+        (b"name", name_table),
+        (b"post", post_table),
+    ])
+}
+
+/// Таблицы шрифта OpenType с контурами CFF.
+fn opentype_tables(project: &FontProject) -> Result<Vec<Table>, FontError> {
+    let (prepared, codepoint_to_gid) = prepare_glyphs(project)?;
+    let metrics = compute_metrics(&prepared);
+
+    let glyphs: Vec<cff::CffGlyph> = prepared
+        .iter()
+        .map(|glyph| cff::CffGlyph {
+            name: glyph.name.clone(),
+            advance_width: glyph.advance_width,
+            contours: glyph
+                .contours
+                .iter()
+                .map(|contour| normalize_contour(&contour.points))
+                .filter(|contour| contour.len() >= 2)
+                .collect(),
+        })
+        .collect();
+
+    let cff_table = cff::build_cff_table(project, &glyphs);
+    let cmap_table = build_cmap_table(&codepoint_to_gid);
+    let hmtx_table = build_hmtx_table(
+        &prepared
+            .iter()
+            .map(|glyph| BuiltGlyph {
+                data: Vec::new(),
+                advance_width: glyph.advance_width,
+                lsb: glyph.lsb,
+            })
+            .collect::<Vec<_>>(),
+    );
+    let kern_table = build_kern_table(project, &codepoint_to_gid);
+    let name_table = build_name_table(project);
+    let os2_table = build_os2_table(project, &codepoint_to_gid, &prepared);
+    let post_table = build_post_table(project);
+    let head_table = build_head_table(
+        project,
+        (metrics.x_min, metrics.y_min, metrics.x_max, metrics.y_max),
+        project.meta.units_per_em,
+        false,
+    );
+    let hhea_table = build_hhea_table(
+        project,
+        metrics.advance_max,
+        metrics.min_lsb,
+        metrics.min_rsb,
+        metrics.max_extent,
+        prepared.len() as u16,
+    );
+    // Для шрифтов с контурами CFF таблица `maxp` имеет версию 0.5 и содержит
+    // только количество глифов.
+    let maxp_table = build_maxp_cff_table(prepared.len() as u16);
+
+    Ok(vec![
+        (b"CFF ", cff_table),
+        (b"OS/2", os2_table),
+        (b"cmap", cmap_table),
+        (b"head", head_table),
+        (b"hhea", hhea_table),
+        (b"hmtx", hmtx_table),
+        (b"kern", kern_table),
+        (b"maxp", maxp_table),
+        (b"name", name_table),
+        (b"post", post_table),
+    ])
 }
 
 /// Размер данных глифа с учётом выравнивания до 4 байт.
@@ -454,7 +693,7 @@ fn sanitize(text: &str) -> String {
 fn build_os2_table(
     project: &FontProject,
     map: &BTreeMap<u32, u16>,
-    glyphs: &[BuiltGlyph],
+    glyphs: &[PreparedGlyph],
 ) -> Vec<u8> {
     let meta = &project.meta;
     let mut writer = Writer::new();
@@ -527,7 +766,12 @@ fn build_post_table(project: &FontProject) -> Vec<u8> {
 }
 
 /// Таблица `head`.
-fn build_head_table(_project: &FontProject, bbox: (i16, i16, i16, i16), upem: u16) -> Vec<u8> {
+fn build_head_table(
+    _project: &FontProject,
+    bbox: (i16, i16, i16, i16),
+    upem: u16,
+    long_loca: bool,
+) -> Vec<u8> {
     let mut writer = Writer::new();
     writer.u32(0x00010000); // версия
     writer.u32(0x00010000); // fontRevision 1.0
@@ -544,7 +788,7 @@ fn build_head_table(_project: &FontProject, bbox: (i16, i16, i16, i16), upem: u1
     writer.u16(0); // macStyle
     writer.u16(8); // lowestRecPPEM
     writer.i16(2); // fontDirectionHint
-    writer.i16(1); // indexToLocFormat: длинный
+    writer.i16(i16::from(long_loca)); // indexToLocFormat
     writer.i16(0); // glyphDataFormat
     writer.bytes
 }
@@ -580,7 +824,7 @@ fn build_hhea_table(
     writer.bytes
 }
 
-/// Таблица `maxp`.
+/// Таблица `maxp` (версия 1.0).
 fn build_maxp_table(num_glyphs: u16, max_points: u16, max_contours: u16) -> Vec<u8> {
     let mut writer = Writer::new();
     writer.u32(0x00010000);
@@ -601,8 +845,16 @@ fn build_maxp_table(num_glyphs: u16, max_points: u16, max_contours: u16) -> Vec<
     writer.bytes
 }
 
+/// Таблица `maxp` (версия 0.5) — для шрифтов с контурами CFF.
+fn build_maxp_cff_table(num_glyphs: u16) -> Vec<u8> {
+    let mut writer = Writer::new();
+    writer.u32(0x00005000);
+    writer.u16(num_glyphs);
+    writer.bytes
+}
+
 /// Собирает sfnt-файл из таблиц.
-fn assemble(tables: Vec<(&[u8; 4], Vec<u8>)>) -> Vec<u8> {
+pub(crate) fn assemble(version: u32, tables: Vec<Table>) -> Vec<u8> {
     let num_tables = tables.len();
     let mut sorted = tables;
     sorted.sort_by(|a, b| a.0.cmp(b.0));
@@ -629,7 +881,7 @@ fn assemble(tables: Vec<(&[u8; 4], Vec<u8>)>) -> Vec<u8> {
     }
 
     let mut font = Writer::new();
-    font.u32(0x00010000);
+    font.u32(version);
     font.u16(num_tables as u16);
     font.u16(search_range as u16);
     font.u16(entry_selector as u16);
@@ -708,5 +960,28 @@ mod tests {
         let mut project = sample_project();
         project.meta.units_per_em = 0;
         assert!(build_truetype(&project).is_err());
+    }
+
+    #[test]
+    fn builds_every_format() {
+        let project = sample_project();
+        for format in FontFormat::all() {
+            let bytes = build_font(&project, format).unwrap();
+            assert!(!bytes.is_empty(), "формат {format:?} пуст");
+        }
+    }
+
+    #[test]
+    fn format_extension_roundtrip() {
+        for format in FontFormat::all() {
+            assert_eq!(FontFormat::from_extension(format.extension()), Some(format));
+        }
+        assert_eq!(FontFormat::from_extension("TTF"), Some(FontFormat::Ttf));
+        assert_eq!(
+            FontFormat::from_extension(".woff2"),
+            Some(FontFormat::Woff2)
+        );
+        assert_eq!(FontFormat::from_extension("otf"), Some(FontFormat::Otf));
+        assert_eq!(FontFormat::from_extension("txt"), None);
     }
 }

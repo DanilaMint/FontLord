@@ -24,8 +24,9 @@ export function AboutDialog() {
         <p className="hint">
           Символы рисуются обычной мышью, а специальные кисти превращают рисунок в
           настоящие векторные контуры TrueType. Проект сохраняется в файл
-          <code>.fontlord</code>, готовый шрифт экспортируется в формате
-          <code> .ttf</code>.
+          <code>.fontlord</code>, готовый шрифт экспортируется в форматах
+          <code> .ttf</code>, <code>.otf</code>, <code>.woff</code> и{' '}
+          <code>.woff2</code>.
         </p>
 
         <table className="about-table">
@@ -36,7 +37,7 @@ export function AboutDialog() {
             </tr>
             <tr>
               <td>Ctrl+E</td>
-              <td>экспортировать TTF</td>
+              <td>экспортировать шрифт</td>
             </tr>
             <tr>
               <td>Ctrl+Z / Ctrl+Y</td>

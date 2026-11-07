@@ -5,8 +5,6 @@
 контуры TrueType. Готовый шрифт экспортируется в `.ttf` и открывается в
 любом редакторе шрифтов.
 
-![Интерфейс Fontlord](docs/screenshot.png)
-
 ## Возможности
 
 * **Сетка всех символов Unicode** — 350 блоков, группировка по блокам,
@@ -19,8 +17,10 @@
   x-height, базовая линия, descender), ширина продвижения, масштаб.
 * **Промежуточные сохранения** в формате `.fontlord` (JSON с версией),
   атомарная запись, история изменений с отменой и повтором.
-* **Экспорт TrueType**: таблицы `glyf`, `cmap`, `head`, `hhea`, `hmtx`,
-  `maxp`, `name`, `OS/2`, `post`, `kern`.
+* **Экспорт в четырёх форматах**: TrueType (`.ttf`), OpenType с контурами CFF
+  (`.otf`), а также веб-форматы WOFF (`.woff`) и WOFF2 (`.woff2`).
+  Таблицы TrueType: `glyf`, `cmap`, `head`, `hhea`, `hmtx`, `maxp`, `name`,
+  `OS/2`, `post`, `kern`.
 * **Предпросмотр шрифта** прямо в интерфейсе — собирается настоящий TTF и
   отрисовывается через `FontFace`.
 * **Задел под лигатуры и диакритику**: структуры данных и расчёты уже
@@ -50,7 +50,7 @@
 
 ```
 crates/fontlord-core   доменное ядро: модель, кисти, контуры, Unicode, формат проекта
-crates/fontlord-ttf    сборщик шрифтов TrueType
+crates/fontlord-ttf    сборщик шрифтов: TrueType, OpenType (CFF), WOFF, WOFF2
 crates/fontlord-cli    консольные утилиты: info, glyphs, export, demo
 src-tauri              IPC-слой Tauri и состояние приложения
 ui                     интерфейс на React + TypeScript + Vite
@@ -84,6 +84,24 @@ cargo build --release -p fontlord
 
 Готовый исполняемый файл: `target/release/fontlord`.
 
+### Форматы экспорта
+
+| Формат | Расширение | Содержимое |
+|---------|------------|------------|
+| TrueType | `.ttf` | квадратичные контуры в таблице `glyf` |
+| OpenType | `.otf` | кубические контуры в таблице `CFF ` |
+| WOFF | `.woff` | те же таблицы, сжатие zlib |
+| WOFF2 | `.woff2` | те же таблицы, сжатие Brotli |
+
+Формат выбирается в окне экспорта приложения (кнопка «Экспорт» или `Ctrl+E`)
+или в командной строке — по расширению выходного файла либо флагом
+`--format`:
+
+```bash
+cargo run -p fontlord-cli -- export project.fontlord out.woff2
+cargo run -p fontlord-cli -- export project.fontlord out.bin --format otf
+```
+
 То же самое через `make`:
 
 ```bash
@@ -93,6 +111,22 @@ make deps-ui
 make build     # приложение и CLI
 make bundle    # установочные пакеты
 ```
+
+### Сборка под все платформы
+
+Скрипт `tools/build-all.sh` (или `make dist`) проверяет компиляцию ядра для
+macOS (x86_64, Apple Silicon), Windows (x86_64, ARM64) и Linux arm64,
+собирает консольные утилиты под доступные цели и собирает установочные
+пакеты приложения для текущей платформы:
+
+```bash
+./tools/build-all.sh          # всё
+./tools/build-all.sh --check  # только проверка компиляции ядра
+```
+
+Графическое приложение для macOS и Windows собирается на нативных раннерах
+(GitHub Actions): там нужны системные SDK — WebView2 для Windows и AppKit
+для macOS, поэтому линковка этих версий из Linux невозможна.
 
 ### Сборка под основные платформы
 
@@ -141,6 +175,8 @@ cargo run -p fontlord-cli -- demo /tmp/demo.fontlord      # демо-проек�
 cargo run -p fontlord-cli -- info /tmp/demo.fontlord       # сводка
 cargo run -p fontlord-cli -- glyphs /tmp/demo.fontlord     # список глифов
 cargo run -p fontlord-cli -- export /tmp/demo.fontlord /tmp/demo.ttf
+cargo run -p fontlord-cli -- export /tmp/demo.fontlord /tmp/demo.otf
+cargo run -p fontlord-cli -- export /tmp/demo.fontlord /tmp/demo.woff2
 ```
 
 Демонстрационный шрифт собирается и растеризуется командами:

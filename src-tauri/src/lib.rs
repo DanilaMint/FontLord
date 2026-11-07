@@ -39,7 +39,7 @@ pub fn run() {
             commands::glyph_set_metrics,
             commands::glyph_delete,
             commands::glyph_outline,
-            commands::font_export_ttf,
+            commands::font_export,
             commands::font_preview_ttf,
             commands::project_open_dialog,
             commands::project_save_dialog,

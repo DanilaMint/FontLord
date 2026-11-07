@@ -43,7 +43,7 @@ function useMenus(): Menu[] {
   const openNewProject = useStore((state) => state.openNewProject);
   const openProject = useStore((state) => state.openProject);
   const saveProject = useStore((state) => state.saveProject);
-  const exportFont = useStore((state) => state.exportFont);
+  const openExport = useStore((state) => state.openExport);
   const undo = useStore((state) => state.undo);
   const redo = useStore((state) => state.redo);
   const deleteGlyph = useStore((state) => state.deleteGlyph);
@@ -70,7 +70,7 @@ function useMenus(): Menu[] {
           action: () => void saveProject(undefined, true),
         },
         { separator: true, label: '' },
-        { label: 'Экспортировать TTF…', shortcut: 'Ctrl+E', action: () => void exportFont() },
+        { label: 'Экспортировать шрифт…', shortcut: 'Ctrl+E', action: openExport },
         { separator: true, label: '' },
         { label: 'Выход', shortcut: 'Ctrl+Q', action: () => void window.close() },
       ],

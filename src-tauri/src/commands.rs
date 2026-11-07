@@ -320,14 +320,22 @@ pub fn glyph_outline(codepoint: u32, state: tauri::State<'_, AppState>) -> Optio
     })
 }
 
-/// Экспортирует проект в файл TrueType.
+/// Разбирает название формата экспорта.
+fn parse_format(format: &str) -> Result<fontlord_ttf::FontFormat, String> {
+    fontlord_ttf::FontFormat::from_extension(format)
+        .ok_or_else(|| format!("неизвестный формат шрифта: {format}"))
+}
+
+/// Экспортирует проект в файл шрифта выбранного формата.
 #[tauri::command]
-pub fn font_export_ttf(
+pub fn font_export(
     path: String,
+    format: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<ExportReport, String> {
     let project = state.project();
-    let bytes = fontlord_ttf::build_truetype(&project).map_err(|e| e.to_string())?;
+    let format = parse_format(&format)?;
+    let bytes = fontlord_ttf::build_font(&project, format).map_err(|e| e.to_string())?;
     let target = Path::new(&path);
     std::fs::write(target, &bytes).map_err(|e| e.to_string())?;
     Ok(ExportReport {
@@ -410,14 +418,16 @@ pub async fn project_save_dialog(
     Ok(Some(project_state(&state)))
 }
 
-/// Экспортирует шрифт TrueType через системный диалог.
+/// Экспортирует шрифт выбранного формата через системный диалог.
 #[tauri::command]
 pub async fn font_export_dialog(
     app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
+    format: String,
 ) -> Result<Option<ExportReport>, String> {
+    let format = parse_format(&format)?;
     let family = state.with(|inner| inner.project.meta.family_name.clone());
-    let default_name = format!("{}.ttf", family.replace(' ', ""));
+    let default_name = format!("{}.{}", family.replace(' ', ""), format.extension());
 
     let (sender, mut receiver) = tauri::async_runtime::channel::<Option<PathBuf>>(1);
 
@@ -425,7 +435,8 @@ pub async fn font_export_dialog(
         .file()
         .set_title("Экспортировать шрифт")
         .set_file_name(&default_name)
-        .add_filter("Шрифт TrueType", &["ttf"])
+        .add_filter(format.label(), &[format.extension()])
+        .add_filter("Все файлы", &["*"])
         .save_file(move |file| {
             let path = file.and_then(|f| f.into_path().ok());
             drop(sender.send(path));
@@ -436,7 +447,7 @@ pub async fn font_export_dialog(
     };
 
     let project = state.project();
-    let bytes = fontlord_ttf::build_truetype(&project).map_err(|e| e.to_string())?;
+    let bytes = fontlord_ttf::build_font(&project, format).map_err(|e| e.to_string())?;
     std::fs::write(&path, &bytes).map_err(|e| e.to_string())?;
 
     Ok(Some(ExportReport {
