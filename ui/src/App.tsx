@@ -12,9 +12,11 @@ import { GlyphCanvas } from './components/GlyphCanvas';
 import { BrushPanel } from './components/Inspector';
 import { LicenseDialog } from './components/LicenseDialog';
 import { MenuBar } from './components/MenuBar';
+import { LanguageDialog } from './components/SettingsDialog';
 import { NewProjectDialog } from './components/NewProjectDialog';
 import { UnicodePanel } from './components/UnicodePanel';
 import * as ipc from './ipc';
+import { useT } from './i18n';
 import { useStore } from './store';
 
 /** Формирует заголовок окна по состоянию проекта. */
@@ -28,6 +30,7 @@ function windowTitle(path: string | null, family: string, style: string): string
 }
 
 export function App() {
+  const t = useT();
   const init = useStore((state) => state.init);
   const project = useStore((state) => state.project);
   const status = useStore((state) => state.status);
@@ -209,7 +212,7 @@ export function App() {
           <span className="brand-mark">FL</span>
           <div>
             <strong>Fontlord</strong>
-            <small>редактор шрифтов</small>
+            <small>{t('toolbar.subtitle')}</small>
           </div>
         </div>
 
@@ -225,22 +228,22 @@ export function App() {
 
         <div className="toolbar">
           <button type="button" onClick={() => void undo()} disabled={!project?.canUndo}>
-            ⟲ Отменить
+            ⟲ {t('toolbar.undo')}
           </button>
           <button type="button" onClick={() => void redo()} disabled={!project?.canRedo}>
-            ⟳ Повторить
+            ⟳ {t('toolbar.redo')}
           </button>
           <button type="button" onClick={openNewProject}>
-            Создать
+            {t('toolbar.create')}
           </button>
           <button type="button" onClick={() => void openProject()}>
-            Открыть
+            {t('toolbar.open')}
           </button>
           <button type="button" onClick={() => void saveProject()}>
-            Сохранить
+            {t('toolbar.save')}
           </button>
           <button type="button" className="primary" onClick={openExport}>
-            Экспорт
+            {t('toolbar.export')}
           </button>
         </div>
       </header>
@@ -259,12 +262,12 @@ export function App() {
                   {currentCodepoint.toString(16).toUpperCase().padStart(4, '0')}
                 </span>
                 <button type="button" onClick={closeGlyph}>
-                  Закрыть
+                  {t('workspace.close')}
                 </button>
               </>
             ) : (
               <span className="workspace-title muted">
-                Выберите символ для редактирования
+                {t('workspace.selectGlyph')}
               </span>
             )}
           </div>
@@ -283,14 +286,17 @@ export function App() {
       <ExportDialog />
       <AboutDialog />
       <LicenseDialog />
+      <LanguageDialog />
 
       <footer className="statusbar">
         <span>{status}</span>
         {error && <span className="status-error">{error}</span>}
         <span className="spacer" />
         <span>
-          Глифов: {project?.glyphCount ?? 0} · Единиц на em:{' '}
-          {project?.meta.unitsPerEm ?? 1000}
+          {t('status.glyphs', {
+            glyphs: project?.glyphCount ?? 0,
+            upem: project?.meta.unitsPerEm ?? 1000,
+          })}
         </span>
       </footer>
     </div>

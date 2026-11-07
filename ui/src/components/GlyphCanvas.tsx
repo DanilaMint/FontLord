@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { canvasToFont, contourToPath, fontToCanvas, type Viewport } from '../canvas';
+import { useT } from '../i18n';
 import { useStore } from '../store';
 import type { BrushKind, StrokePoint } from '../types';
 
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function GlyphCanvas({ active }: Props) {
+  const t = useT();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [drawing, setDrawing] = useState(false);
@@ -258,7 +260,7 @@ export function GlyphCanvas({ active }: Props) {
           +
         </button>
         <button type="button" onClick={zoomReset} title="Сбросить масштаб (Ctrl+0)">
-          100%
+          {t('canvas.zoomReset')}
         </button>
         <button
           type="button"
@@ -266,10 +268,10 @@ export function GlyphCanvas({ active }: Props) {
           onClick={() => setClosedMode((value) => !value)}
           title="Замкнуть контур (кольцо)"
         >
-          Кольцо
+          {t('canvas.ring')}
         </button>
-        <span className="canvas-hint" title="Удерживайте Shift, чтобы вести прямую линию">
-          Shift — прямая
+        <span className="canvas-hint" title={t('canvas.shiftHint')}>
+          {t('canvas.shiftHint')}
         </span>
       </div>
     </div>

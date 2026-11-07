@@ -2,9 +2,11 @@
  * Окно «О программе».
  */
 
+import { useT } from '../i18n';
 import { useStore } from '../store';
 
 export function AboutDialog() {
+  const t = useT();
   const open = useStore((state) => state.aboutOpen);
   const closeAbout = useStore((state) => state.closeAbout);
 
@@ -16,51 +18,45 @@ export function AboutDialog() {
         <div className="about-head">
           <span className="brand-mark large">FL</span>
           <div>
-            <h2>Fontlord</h2>
-            <p className="hint">Редактор шрифтов с векторными кистями</p>
+            <h2>{t('about.title')}</h2>
+            <p className="hint">{t('about.subtitle')}</p>
           </div>
         </div>
 
-        <p className="hint">
-          Символы рисуются обычной мышью, а специальные кисти превращают рисунок в
-          настоящие векторные контуры TrueType. Проект сохраняется в файл
-          <code>.fontlord</code>, готовый шрифт экспортируется в форматах
-          <code> .ttf</code>, <code>.otf</code>, <code>.woff</code> и{' '}
-          <code>.woff2</code>.
-        </p>
+        <p className="hint">{t('about.text')}</p>
 
         <table className="about-table">
           <tbody>
             <tr>
               <td>Ctrl+N / Ctrl+O / Ctrl+S</td>
-              <td>новый проект, открыть, сохранить</td>
+              <td>{t('about.hotkey.project')}</td>
             </tr>
             <tr>
               <td>Ctrl+E</td>
-              <td>экспортировать шрифт</td>
+              <td>{t('about.hotkey.export')}</td>
             </tr>
             <tr>
               <td>Ctrl+Z / Ctrl+Y</td>
-              <td>отменить, повторить</td>
+              <td>{t('about.hotkey.history')}</td>
             </tr>
             <tr>
               <td>B / M / N / S / E</td>
-              <td>перо, маркер, каллиграфия, мягкая кисть, ластик</td>
+              <td>{t('about.hotkey.brushes')}</td>
             </tr>
             <tr>
               <td>Ctrl+0 / Ctrl++ / Ctrl+−</td>
-              <td>масштаб холста</td>
+              <td>{t('about.hotkey.zoom')}</td>
             </tr>
             <tr>
               <td>Del / Esc</td>
-              <td>удалить глиф, закрыть глиф</td>
+              <td>{t('about.hotkey.glyph')}</td>
             </tr>
           </tbody>
         </table>
 
         <div className="modal-actions">
           <button type="button" className="primary" onClick={closeAbout}>
-            Закрыть
+            {t('about.close')}
           </button>
         </div>
       </div>

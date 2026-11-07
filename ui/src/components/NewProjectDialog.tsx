@@ -6,9 +6,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { useT } from '../i18n';
 import { useStore } from '../store';
 
 export function NewProjectDialog() {
+  const t = useT();
   const open = useStore((state) => state.newProjectOpen);
   const newProject = useStore((state) => state.newProject);
   const closeNewProject = useStore((state) => state.closeNewProject);
@@ -35,13 +37,11 @@ export function NewProjectDialog() {
   return (
     <div className="modal-backdrop" onClick={closeNewProject}>
       <div className="modal" onClick={(event) => event.stopPropagation()}>
-        <h2>Новый проект</h2>
-        <p className="hint">
-          Имя семейства и начертания попадут в таблицу `name` собранного шрифта.
-        </p>
+        <h2>{t('new.title')}</h2>
+        <p className="hint">{t('new.hint')}</p>
 
         <label className="field">
-          <span>Семейство</span>
+          <span>{t('new.family')}</span>
           <input
             ref={inputRef}
             className="input"
@@ -54,7 +54,7 @@ export function NewProjectDialog() {
         </label>
 
         <label className="field">
-          <span>Начертание</span>
+          <span>{t('new.style')}</span>
           <input
             className="input"
             value={style}
@@ -67,10 +67,10 @@ export function NewProjectDialog() {
 
         <div className="modal-actions">
           <button type="button" onClick={closeNewProject}>
-            Отмена
+            {t('new.cancel')}
           </button>
           <button type="button" className="primary" onClick={submit}>
-            Создать
+            {t('new.create')}
           </button>
         </div>
       </div>

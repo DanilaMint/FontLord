@@ -4,10 +4,13 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { useT } from '../i18n';
 import { useStore } from '../store';
 import type { CodepointInfo } from '../types';
 
-export function UnicodePanel() {  const blocks = useStore((state) => state.blocks);
+export function UnicodePanel() {
+  const t = useT();
+  const blocks = useStore((state) => state.blocks);
   const selectedBlock = useStore((state) => state.selectedBlock);
   const gridItems = useStore((state) => state.gridItems);
   const gridExhausted = useStore((state) => state.gridExhausted);
@@ -48,15 +51,19 @@ export function UnicodePanel() {  const blocks = useStore((state) => state.block
   return (
     <div className="panel unicode-panel">
       <div className="panel-header">
-        <h2>Символы</h2>
-        <span className="badge">{searchResult ? `найдено ${total}` : `${total}`}</span>
+        <h2>{t('unicode.title')}</h2>
+        <span className="badge">
+            {searchResult
+              ? t('unicode.found', { count: total })
+              : t('unicode.count', { count: total })}
+          </span>
       </div>
 
       <div className="search-row">
         <input
           className="input"
           type="search"
-          placeholder="Поиск: имя, U+0041, символ…"
+          placeholder={t('unicode.searchPlaceholder')}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
@@ -67,7 +74,7 @@ export function UnicodePanel() {  const blocks = useStore((state) => state.block
           <input
             className="input small"
             type="search"
-            placeholder="Фильтр блоков"
+            placeholder={t('unicode.filterPlaceholder')}
             value={blockFilter}
             onChange={(event) => setBlockFilter(event.target.value)}
           />
@@ -97,7 +104,7 @@ export function UnicodePanel() {  const blocks = useStore((state) => state.block
         </div>
       )}
 
-      {searching && <div className="hint">Поиск…</div>}
+      {searching && <div className="hint">{t('unicode.searching')}</div>}
 
       <div className="glyph-grid">
         {items.map((item) => {
@@ -126,7 +133,7 @@ export function UnicodePanel() {  const blocks = useStore((state) => state.block
 
       {!searchResult && !gridExhausted && (
         <button type="button" className="load-more" onClick={() => void loadMore()}>
-          Показать ещё
+          {t('unicode.loadMore')}
         </button>
       )}
     </div>

@@ -5,9 +5,11 @@
 import { useEffect, useState } from 'react';
 
 import * as ipc from '../ipc';
+import { useT } from '../i18n';
 import { useStore } from '../store';
 
 export function FontSettings() {
+  const t = useT();
   const meta = useStore((state) => state.meta);
   const refreshProject = useStore((state) => state.refreshProject);
   const setStatus = useStore((state) => state.setStatus);
@@ -49,9 +51,9 @@ export function FontSettings() {
         capHeight,
       });
       await refreshProject();
-      setStatus('Параметры шрифта обновлены');
+      setStatus(t('font.saved'));
     } catch (error) {
-      setStatus(`Ошибка: ${String(error)}`);
+      setStatus(t('status.error', { message: String(error) }));
     }
   };
 
@@ -60,12 +62,12 @@ export function FontSettings() {
   return (
     <section className="panel">
       <div className="panel-header">
-        <h2>Шрифт</h2>
+        <h2>{t('font.title')}</h2>
       </div>
 
       <div className="meta-grid">
         <label className="field">
-          <span>Семейство</span>
+          <span>{t('font.family')}</span>
           <input
             className="input small"
             value={family}
@@ -74,7 +76,7 @@ export function FontSettings() {
           />
         </label>
         <label className="field">
-          <span>Начертание</span>
+          <span>{t('font.style')}</span>
           <input
             className="input small"
             value={style}
@@ -83,7 +85,7 @@ export function FontSettings() {
           />
         </label>
         <label className="field">
-          <span>Версия</span>
+          <span>{t('font.version')}</span>
           <input
             className="input small"
             value={version}
@@ -92,7 +94,7 @@ export function FontSettings() {
           />
         </label>
         <label className="field">
-          <span>Единиц на em</span>
+          <span>{t('font.upem')}</span>
           <input
             className="input small"
             type="number"
@@ -105,7 +107,7 @@ export function FontSettings() {
           />
         </label>
         <label className="field">
-          <span>Ascender</span>
+          <span>{t('font.ascender')}</span>
           <input
             className="input small"
             type="number"
@@ -115,7 +117,7 @@ export function FontSettings() {
           />
         </label>
         <label className="field">
-          <span>Descender</span>
+          <span>{t('font.descender')}</span>
           <input
             className="input small"
             type="number"
@@ -125,7 +127,7 @@ export function FontSettings() {
           />
         </label>
         <label className="field">
-          <span>x-height</span>
+          <span>{t('font.xHeight')}</span>
           <input
             className="input small"
             type="number"
@@ -135,7 +137,7 @@ export function FontSettings() {
           />
         </label>
         <label className="field">
-          <span>Cap-height</span>
+          <span>{t('font.capHeight')}</span>
           <input
             className="input small"
             type="number"

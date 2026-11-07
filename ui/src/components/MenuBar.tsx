@@ -2,12 +2,13 @@
  * Верхнее меню приложения.
  *
  * Поведение как в стандартных приложениях: меню открывается по клику, при
- * открытом меню наведение переключаетmenu, закрытие — по клику вне меню,
+ * открытом меню наведение переключает меню, закрытие — по клику вне меню,
  * клавише Escape или выбору пункта. Поддерживается навигация стрелками.
  */
 
 import { useEffect, useRef, useState } from 'react';
 
+import { useT } from '../i18n';
 import { useStore } from '../store';
 
 /** Пункт меню. */
@@ -36,6 +37,7 @@ export interface Menu {
 
 /** Собирает меню из текущего состояния приложения. */
 function useMenus(): Menu[] {
+  const t = useT();
   const project = useStore((state) => state.project);
   const glyph = useStore((state) => state.glyph);
   const brushKind = useStore((state) => state.brushKind);
@@ -57,55 +59,56 @@ function useMenus(): Menu[] {
   const leftPanelVisible = useStore((state) => state.leftPanelVisible);
   const openAbout = useStore((state) => state.openAbout);
   const openLicense = useStore((state) => state.openLicense);
+  const openLanguageDialog = useStore((state) => state.openLanguageDialog);
 
   return [
     {
-      label: 'Файл',
+      label: t('menu.file'),
       items: [
-        { label: 'Новый проект…', shortcut: 'Ctrl+N', action: openNewProject },
-        { label: 'Открыть проект…', shortcut: 'Ctrl+O', action: () => void openProject() },
+        { label: t('menu.file.new'), shortcut: 'Ctrl+N', action: openNewProject },
+        { label: t('menu.file.open'), shortcut: 'Ctrl+O', action: () => void openProject() },
         { separator: true, label: '' },
-        { label: 'Сохранить', shortcut: 'Ctrl+S', action: () => void saveProject() },
+        { label: t('menu.file.save'), shortcut: 'Ctrl+S', action: () => void saveProject() },
         {
-          label: 'Сохранить как…',
+          label: t('menu.file.saveAs'),
           shortcut: 'Ctrl+Shift+S',
           action: () => void saveProject(undefined, true),
         },
         { separator: true, label: '' },
         {
-          label: 'Декомпилировать шрифт…',
+          label: t('menu.file.decompile'),
           action: () => void decompileFont(),
         },
         { separator: true, label: '' },
-        { label: 'Экспортировать шрифт…', shortcut: 'Ctrl+E', action: openExport },
+        { label: t('menu.file.export'), shortcut: 'Ctrl+E', action: openExport },
         { separator: true, label: '' },
-        { label: 'Выход', shortcut: 'Ctrl+Q', action: () => void window.close() },
+        { label: t('menu.file.quit'), shortcut: 'Ctrl+Q', action: () => void window.close() },
       ],
     },
     {
-      label: 'Правка',
+      label: t('menu.edit'),
       items: [
         {
-          label: 'Отменить',
+          label: t('menu.edit.undo'),
           shortcut: 'Ctrl+Z',
           disabled: !project?.canUndo,
           action: () => void undo(),
         },
         {
-          label: 'Повторить',
+          label: t('menu.edit.redo'),
           shortcut: 'Ctrl+Y',
           disabled: !project?.canRedo,
           action: () => void redo(),
         },
         { separator: true, label: '' },
         {
-          label: 'Удалить глиф',
+          label: t('menu.edit.deleteGlyph'),
           shortcut: 'Del',
           disabled: !glyph,
           action: () => void deleteGlyph(),
         },
         {
-          label: 'Закрыть глиф',
+          label: t('menu.edit.closeGlyph'),
           shortcut: 'Esc',
           disabled: !glyph,
           action: closeGlyph,
@@ -113,14 +116,14 @@ function useMenus(): Menu[] {
       ],
     },
     {
-      label: 'Вид',
+      label: t('menu.view'),
       items: [
-        { label: 'Увеличить', shortcut: 'Ctrl++', action: zoomIn },
-        { label: 'Уменьшить', shortcut: 'Ctrl+-', action: zoomOut },
-        { label: 'Сбросить масштаб', shortcut: 'Ctrl+0', action: zoomReset },
+        { label: t('menu.view.zoomIn'), shortcut: 'Ctrl++', action: zoomIn },
+        { label: t('menu.view.zoomOut'), shortcut: 'Ctrl+-', action: zoomOut },
+        { label: t('menu.view.zoomReset'), shortcut: 'Ctrl+0', action: zoomReset },
         { separator: true, label: '' },
         {
-          label: 'Панель символов',
+          label: t('menu.view.panel'),
           shortcut: 'Ctrl+B',
           checked: leftPanelVisible,
           action: toggleLeftPanel,
@@ -128,34 +131,34 @@ function useMenus(): Menu[] {
       ],
     },
     {
-      label: 'Кисти',
+      label: t('menu.brushes'),
       items: [
         {
-          label: 'Перо',
+          label: t('menu.brushes.pen'),
           shortcut: 'B',
           action: () => setBrushKind('pen'),
           disabled: brushKind === 'pen',
         },
         {
-          label: 'Маркер',
+          label: t('menu.brushes.marker'),
           shortcut: 'M',
           action: () => setBrushKind('marker'),
           disabled: brushKind === 'marker',
         },
         {
-          label: 'Каллиграфия',
+          label: t('menu.brushes.broadNib'),
           shortcut: 'N',
           action: () => setBrushKind('broadNib'),
           disabled: brushKind === 'broadNib',
         },
         {
-          label: 'Мягкая кисть',
+          label: t('menu.brushes.soft'),
           shortcut: 'S',
           action: () => setBrushKind('soft'),
           disabled: brushKind === 'soft',
         },
         {
-          label: 'Ластик',
+          label: t('menu.brushes.eraser'),
           shortcut: 'E',
           action: () => setBrushKind('eraser'),
           disabled: brushKind === 'eraser',
@@ -163,11 +166,17 @@ function useMenus(): Menu[] {
       ],
     },
     {
-      label: 'Справка',
+      label: t('menu.settings'),
       items: [
-        { label: 'О программе', shortcut: 'F1', action: openAbout },
+        { label: t('menu.settings.language'), action: openLanguageDialog },
+      ],
+    },
+    {
+      label: t('menu.help'),
+      items: [
+        { label: t('menu.help.about'), shortcut: 'F1', action: openAbout },
         { separator: true, label: '' },
-        { label: 'Лицензия', action: openLicense },
+        { label: t('menu.help.license'), action: openLicense },
       ],
     },
   ];

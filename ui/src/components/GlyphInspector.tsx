@@ -5,9 +5,11 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import * as ipc from '../ipc';
+import { useT } from '../i18n';
 import { useStore } from '../store';
 
 export function GlyphInspector() {
+  const t = useT();
   const glyph = useStore((state) => state.glyph);
   const currentCodepoint = useStore((state) => state.currentCodepoint);
   const meta = useStore((state) => state.meta);
@@ -30,7 +32,7 @@ export function GlyphInspector() {
   return (
     <section className="panel">
       <div className="panel-header">
-        <h2>Глиф</h2>
+        <h2>{t('glyph.title')}</h2>
         {currentCodepoint !== null && (
           <span className="badge">
             U+{currentCodepoint.toString(16).toUpperCase().padStart(4, '0')}
@@ -41,8 +43,8 @@ export function GlyphInspector() {
       {!glyph && (
         <div className="hint">
           {currentCodepoint !== null
-            ? 'Глиф пуст. Нарисуйте первый штрих на холсте — глиф будет создан автоматически.'
-            : 'Выберите символ в сетке слева, чтобы начать рисование.'}
+            ? t('glyph.empty')
+            : t('glyph.choose')}
         </div>
       )}
 
@@ -54,7 +56,7 @@ export function GlyphInspector() {
             </div>
             <div className="glyph-head-fields">
               <label className="field">
-                <span>Имя</span>
+                <span>{t('glyph.name')}</span>
                 <input
                   className="input small"
                   value={name}
@@ -63,7 +65,7 @@ export function GlyphInspector() {
                 />
               </label>
               <label className="field">
-                <span>Ширина</span>
+                <span>{t('glyph.width')}</span>
                 <input
                   className="input small"
                   type="number"
@@ -78,7 +80,7 @@ export function GlyphInspector() {
           </div>
 
           <label className="field">
-            <span>Заметки</span>
+            <span>{t('glyph.notes')}</span>
             <textarea
               className="input small"
               rows={2}
@@ -89,14 +91,14 @@ export function GlyphInspector() {
           </label>
 
           <div className="panel-header sub">
-            <h3>Штрихи ({glyph.strokes.length})</h3>
+            <h3>{t('glyph.strokes', { count: glyph.strokes.length })}</h3>
             <button type="button" className="danger" onClick={() => void deleteGlyph()}>
-              Удалить глиф
+              {t('glyph.delete')}
             </button>
           </div>
 
           {glyph.strokes.length === 0 && (
-            <div className="hint">Штрихов пока нет. Рисуйте кистью на холсте.</div>
+            <div className="hint">{t('glyph.noStrokes')}</div>
           )}
 
           <ul className="stroke-list">
@@ -104,7 +106,11 @@ export function GlyphInspector() {
               <li key={stroke.id}>
                 <span className={`stroke-kind kind-${stroke.kind}`} />
                 <span className="stroke-info">
-                  {stroke.kind} · {stroke.points.length} точек · {stroke.settings.width} ед.
+                  {t('glyph.strokeInfo', {
+                    kind: stroke.kind,
+                    count: stroke.points.length,
+                    width: stroke.settings.width,
+                  })}
                 </span>
                 <button type="button" onClick={() => void removeStroke(stroke.id)}>
                   ✕
@@ -145,6 +151,7 @@ export function GlyphInspector() {
  * Предпросмотр шрифта: собирает TTF на лету и показывает его в интерфейсе.
  */
 export function FontPreview() {
+  const t = useT();
   const project = useStore((state) => state.project);
   const glyph = useStore((state) => state.glyph);
   const [fontFamily, setFontFamily] = useState('FontlordPreview');
@@ -177,13 +184,13 @@ export function FontPreview() {
   return (
     <section className="panel">
       <div className="panel-header">
-        <h2>Предпросмотр шрифта</h2>
+        <h2>{t('preview.title')}</h2>
       </div>
       <p className="preview-sample" style={{ fontFamily: `${fontFamily}, sans-serif` }}>
         {sample}
       </p>
       <p className="hint">
-        Предпросмотр использует реальную сборку шрифта: контуры глифов, метрики и кернинг.
+        {t('preview.hint')}
       </p>
     </section>
   );

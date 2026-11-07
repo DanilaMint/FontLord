@@ -7,6 +7,7 @@
 
 import { create } from 'zustand';
 
+import { loadLanguage, saveLanguage, translate, type Language } from './dict';
 import * as ipc from './ipc';
 import type {
   BlockInfo,
@@ -60,9 +61,11 @@ interface AppState {
   /* Служебное */
   status: string;
   error: string | null;
+  language: Language;
   newProjectOpen: boolean;
   aboutOpen: boolean;
   licenseOpen: boolean;
+  languageDialogOpen: boolean;
   exportOpen: boolean;
   leftPanelVisible: boolean;
 
@@ -94,6 +97,8 @@ interface AppState {
   closeAbout: () => void;
   openLicense: () => void;
   closeLicense: () => void;
+  openLanguageDialog: () => void;
+  closeLanguageDialog: () => void;
   openExport: () => void;
   closeExport: () => void;
   toggleLeftPanel: () => void;
@@ -106,6 +111,7 @@ interface AppState {
   decompileFont: () => Promise<void>;
   setStatus: (status: string) => void;
   setError: (error: string | null) => void;
+  setLanguage: (language: Language) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -127,11 +133,13 @@ export const useStore = create<AppState>((set, get) => ({
   presets: [],
   nextStrokeId: 1,
 
-  status: 'Готово',
+  status: translate(loadLanguage(), 'status.ready'),
   error: null,
+  language: loadLanguage(),
   newProjectOpen: false,
   aboutOpen: false,
   licenseOpen: false,
+  languageDialogOpen: false,
   exportOpen: false,
   leftPanelVisible: true,
 
@@ -157,9 +165,9 @@ export const useStore = create<AppState>((set, get) => ({
       if (latin) {
         await get().selectBlock(latin);
       }
-      set({ status: `Загружено блоков: ${blocks.length}` });
+      set({ status: translate(get().language, 'status.blocks', { count: blocks.length }) });
     } catch (error) {
-      set({ error: String(error) });
+      set({ error: translate(get().language, 'status.error', { message: String(error) }) });
     }
   },
 
@@ -196,7 +204,10 @@ export const useStore = create<AppState>((set, get) => ({
       const result = await ipc.unicodeSearch(trimmed, 0, 800);
       set({ searchResult: result, searching: false });
     } catch (error) {
-      set({ error: String(error), searching: false });
+      set({
+        error: translate(get().language, 'status.error', { message: String(error) }),
+        searching: false,
+      });
     }
   },
 
@@ -272,7 +283,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (codepoint !== null) {
       set({ glyph: await ipc.glyphGet(codepoint) });
     }
-    set({ status: 'Отмена' });
+    set({ status: translate(get().language, 'status.undo') });
   },
 
   async redo() {
@@ -282,7 +293,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (codepoint !== null) {
       set({ glyph: await ipc.glyphGet(codepoint) });
     }
-    set({ status: 'Повтор' });
+    set({ status: translate(get().language, 'status.redo') });
   },
 
   openNewProject() {
@@ -307,6 +318,14 @@ export const useStore = create<AppState>((set, get) => ({
 
   closeLicense() {
     set({ licenseOpen: false });
+  },
+
+  openLanguageDialog() {
+    set({ languageDialogOpen: true });
+  },
+
+  closeLanguageDialog() {
+    set({ languageDialogOpen: false });
   },
 
   toggleLeftPanel() {
@@ -334,10 +353,12 @@ export const useStore = create<AppState>((set, get) => ({
         currentCodepoint: null,
         glyph: null,
         newProjectOpen: false,
-        status: `Создан проект «${project.meta.familyName}»`,
+        status: translate(get().language, 'status.created', {
+          name: project.meta.familyName,
+        }),
       });
     } catch (error) {
-      set({ error: String(error) });
+      set({ error: translate(get().language, 'status.error', { message: String(error) }) });
     }
   },
 
@@ -350,9 +371,13 @@ export const useStore = create<AppState>((set, get) => ({
           ? await ipc.projectSave(target)
           : await ipc.projectSaveDialog();
       if (!project) return;
-      set({ project, meta: project.meta, status: `Сохранено: ${project.path ?? ''}` });
+      set({
+        project,
+        meta: project.meta,
+        status: translate(get().language, 'status.saved', { path: project.path ?? '' }),
+      });
     } catch (error) {
-      set({ error: String(error) });
+      set({ error: translate(get().language, 'status.error', { message: String(error) }) });
     }
   },
 
@@ -361,9 +386,9 @@ export const useStore = create<AppState>((set, get) => ({
       const project = await ipc.projectOpenDialog();
       if (!project) return;
       set({ project, meta: project.meta, currentCodepoint: null, glyph: null });
-      set({ status: `Открыт: ${project.path ?? ''}` });
+      set({ status: translate(get().language, 'status.opened', { path: project.path ?? '' }) });
     } catch (error) {
-      set({ error: String(error) });
+      set({ error: translate(get().language, 'status.error', { message: String(error) }) });
     }
   },
 
@@ -381,10 +406,14 @@ export const useStore = create<AppState>((set, get) => ({
       if (!report) return;
       set({
         exportOpen: false,
-        status: `Шрифт сохранён: ${report.path} (${report.glyphCount} глифов, ${report.bytes} Б)`,
+        status: translate(get().language, 'status.exported', {
+          path: report.path,
+          glyphs: report.glyphCount,
+          bytes: report.bytes,
+        }),
       });
     } catch (error) {
-      set({ error: String(error) });
+      set({ error: translate(get().language, 'status.error', { message: String(error) }) });
     }
   },
 
@@ -397,10 +426,14 @@ export const useStore = create<AppState>((set, get) => ({
         meta: outcome.project.meta,
         currentCodepoint: null,
         glyph: null,
-        status: `Декомпилирован шрифт «${outcome.familyName} ${outcome.styleName}» — глифов: ${outcome.glyphCount}`,
+        status: translate(get().language, 'status.decompiled', {
+          family: outcome.familyName,
+          style: outcome.styleName,
+          glyphs: outcome.glyphCount,
+        }),
       });
     } catch (error) {
-      set({ error: String(error) });
+      set({ error: translate(get().language, 'status.error', { message: String(error) }) });
     }
   },
 
@@ -409,5 +442,11 @@ export const useStore = create<AppState>((set, get) => ({
   },
   setError(error) {
     set({ error });
+  },
+
+  setLanguage(language) {
+    set({ language });
+    saveLanguage(language);
+    document.documentElement.lang = language;
   },
 }));
