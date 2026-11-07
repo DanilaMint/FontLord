@@ -449,6 +449,12 @@ textarea:focus {
   color: var(--accent);
 }
 
+.canvas-hint {
+  color: var(--text-faint);
+  font-size: 10px;
+  padding-left: 4px;
+}
+
 /* ---------- Кисти ---------- */
 
 .brush-kinds {

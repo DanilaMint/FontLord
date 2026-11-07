@@ -155,6 +155,10 @@ export function GlyphCanvas({ active }: Props) {
   ]);
 
   const viewportRef = useRef<Viewport>({ pixelsPerUnit: 1, originX: 0, originY: 0 });
+  /** Точки текущего штриха ( синхронно с событиями указателя). */
+  const pointsRef = useRef<StrokePoint[]>([]);
+  /** Начало текущего штриха — от него считается выравнивание по Shift. */
+  const strokeAnchorRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
     redraw();
@@ -180,25 +184,33 @@ export function GlyphCanvas({ active }: Props) {
     event.currentTarget.setPointerCapture(event.pointerId);
     const point = toFont(event);
     const pressure = pressureOf(event);
+    strokeAnchorRef.current = point;
+    pointsRef.current = [{ x: point.x, y: point.y, pressure }];
     setDrawing(true);
     setLivePoints([{ x: point.x, y: point.y, pressure }]);
   };
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (!drawing) return;
-    const point = toFont(event);
+    let point = toFont(event);
+    // Удержание Shift выравнивает штрих по прямой: направление округляется до
+    // ближайших 45°, а длина сохраняется.
+    if (event.shiftKey) {
+      point = constrainToStraight(point, strokeAnchorRef.current);
+    }
     const pressure = pressureOf(event);
-    setLivePoints((points) => {
-      const last = points[points.length - 1];
-      if (last && Math.hypot(last.x - point.x, last.y - point.y) < 1.2) return points;
-      return [...points, { x: point.x, y: point.y, pressure }];
-    });
+    const next = { x: point.x, y: point.y, pressure };
+    const last = pointsRef.current[pointsRef.current.length - 1];
+    if (last && Math.hypot(last.x - point.x, last.y - point.y) < 1.2) return;
+    pointsRef.current = [...pointsRef.current, next];
+    setLivePoints(pointsRef.current);
   };
 
   const handlePointerUp = async () => {
     if (!drawing) return;
     setDrawing(false);
-    const points = livePoints;
+    const points = pointsRef.current;
+    pointsRef.current = [];
     setLivePoints([]);
     if (points.length === 0) return;
 
@@ -256,6 +268,9 @@ export function GlyphCanvas({ active }: Props) {
         >
           Кольцо
         </button>
+        <span className="canvas-hint" title="Удерживайте Shift, чтобы вести прямую линию">
+          Shift — прямая
+        </span>
       </div>
     </div>
   );
@@ -266,6 +281,29 @@ function pressureOf(event: React.PointerEvent<HTMLCanvasElement>): number {
   if (event.pointerType === 'mouse') return MOUSE_PRESSURE;
   if (event.pressure > 0 && event.pressure < 1) return event.pressure;
   return MOUSE_PRESSURE;
+}
+
+/**
+ * Выравнивает точку по прямой относительно начала штриха.
+ *
+ * Направление округляется до ближайших 45°, поэтому штрих получается ровным,
+ * а его длина сохраняется.
+ */
+function constrainToStraight(
+  point: { x: number; y: number },
+  anchor: { x: number; y: number },
+): { x: number; y: number } {
+  const dx = point.x - anchor.x;
+  const dy = point.y - anchor.y;
+  const length = Math.hypot(dx, dy);
+  if (length < 1e-6) return { x: anchor.x, y: anchor.y };
+  const step = Math.PI / 4;
+  const angle = Math.atan2(dy, dx);
+  const snapped = Math.round(angle / step) * step;
+  return {
+    x: anchor.x + Math.cos(snapped) * length,
+    y: anchor.y + Math.sin(snapped) * length,
+  };
 }
 
 /** Предпросмотр штриха во время рисования. */
